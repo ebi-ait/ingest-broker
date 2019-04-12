@@ -26,7 +26,7 @@ class SpreadsheetStorageService:
             with open(submission_spreadsheet_path, "w") as spreadsheet_file:
                 spreadsheet_file.write(spreadsheet_blob)
                 with open(storage_manifest_path, "w") as storage_manfiest:
-                    json.dump({"spreadsheet_name": spreadsheet_name}, storage_manfiest)
+                    json.dump({"name": spreadsheet_name}, storage_manfiest)
                     return submission_spreadsheet_path
         except FileExistsError:
             raise SubmissionSpreadsheetAlreadyExists()
@@ -34,11 +34,11 @@ class SpreadsheetStorageService:
     def retrieve(self, submission_uuid):
         try:
             spreadsheet_location = self.get_spreadsheet_location(submission_uuid)
-            spreadsheet_name = spreadsheet_location["spreadsheet_name"]
-            spreadsheet_path = spreadsheet_location["spreadsheet_path"]
+            spreadsheet_name = spreadsheet_location["name"]
+            spreadsheet_path = spreadsheet_location["path"]
             with open(spreadsheet_path, "rb") as spreadsheet_file:
                 spreadsheet_blob = spreadsheet_file.read()
-                return {"spreadsheet_name": spreadsheet_name, "blob": spreadsheet_blob}
+                return {"name": spreadsheet_name, "blob": spreadsheet_blob}
         except SubmissionSpreadsheetDoesntExist as e:
             raise e
 
@@ -53,9 +53,9 @@ class SpreadsheetStorageService:
             else:
                 with open(storage_manifest_path, "rb") as storage_manifest_file:
                     storage_manifest = json.load(storage_manifest_file)
-                    spreadsheet_name = storage_manifest["spreadsheet_name"]
+                    spreadsheet_name = storage_manifest["name"]
                     spreadsheet_path = f'{submission_dir_path}/{spreadsheet_name}'
                     if not os.path.isfile(spreadsheet_path):
                         raise SubmissionSpreadsheetDoesntExist()
                     else:
-                        return {"spreadsheet_name": spreadsheet_name, "spreadsheet_path": spreadsheet_path}
+                        return {"name": spreadsheet_name, "path": spreadsheet_path}
