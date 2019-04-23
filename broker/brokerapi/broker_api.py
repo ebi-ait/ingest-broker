@@ -4,15 +4,18 @@ from ingest.importer.spreadsheetUploadError import SpreadsheetUploadError
 __author__ = "jupp"
 __license__ = "Apache 2.0"
 
-from flask import Flask, flash, request, render_template, redirect, url_for
+from flask import Flask, flash, request, render_template, redirect, url_for, send_file
 from flask_cors import CORS, cross_origin
 from flask import json
 from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
 from broker.service.summary_service import SummaryService
+from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
+from broker.service.spreadsheet_storage.spreadsheet_storage_exceptions import SubmissionSpreadsheetDoesntExist
 
 from werkzeug.utils import secure_filename
 import os
+import io
 import tempfile
 import threading
 import logging
@@ -42,6 +45,8 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logging.getLogger("IngestApi").setLevel(logging.DEBUG)
+
+SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
 
 @app.route('/api_upload', methods=['POST'])
 @cross_origin()
@@ -84,6 +89,26 @@ def submission_summary(submission_uuid):
         status=200,
         mimetype='application/json'
     )
+
+
+@app.route('/submissions/<submission_uuid>/spreadsheet', methods=['GET'])
+def submission_spreadsheet(submission_uuid):
+    try:
+        spreadsheet = SpreadsheetStorageService(SPREADSHEET_STORAGE_DIR).retrieve(submission_uuid)
+        spreadsheet_name = spreadsheet["name"]
+        spreadsheet_blob = spreadsheet["blob"]
+
+        return send_file(
+            io.BytesIO(spreadsheet_blob),
+            mimetype='application/octet-stream',
+            as_attachment=True,
+            attachment_filename=spreadsheet_name)
+    except SubmissionSpreadsheetDoesntExist as e:
+        return app.response_class(
+            response={"message": f'No spreadsheet found for submission with uuid {submission_uuid}'},
+            status=404,
+            mimetype='application/json'
+        )
 
 
 @app.route('/projects/<project_uuid>/summary', methods=['GET'])
