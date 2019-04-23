@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logging.getLogger("IngestApi").setLevel(logging.DEBUG)
 
-SPREADSHEET_STORAGE_DIR = os.environ['SPREADSHEET_STORAGE_DIR']
+SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
 
 @app.route('/api_upload', methods=['POST'])
 @cross_origin()
