@@ -23,10 +23,10 @@ class SpreadsheetStorageService:
             os.mkdir(submission_dir)
             submission_spreadsheet_path = f'{submission_dir}/{spreadsheet_name}'
             storage_manifest_path = f'{submission_dir}/{self.storage_manifest_name}'
-            with open(submission_spreadsheet_path, "w") as spreadsheet_file:
+            with open(submission_spreadsheet_path, "wb") as spreadsheet_file:
                 spreadsheet_file.write(spreadsheet_blob)
                 with open(storage_manifest_path, "w") as storage_manfiest:
-                    json.dump({"name": spreadsheet_name}, storage_manfiest)
+                    json.dump({"name": spreadsheet_name, "location": submission_spreadsheet_path}, storage_manfiest)
                     return submission_spreadsheet_path
         except FileExistsError:
             raise SubmissionSpreadsheetAlreadyExists()
