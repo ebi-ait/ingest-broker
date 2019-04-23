@@ -54,7 +54,7 @@ class SpreadsheetStorageService:
                 with open(storage_manifest_path, "rb") as storage_manifest_file:
                     storage_manifest = json.load(storage_manifest_file)
                     spreadsheet_name = storage_manifest["name"]
-                    spreadsheet_path = f'{submission_dir_path}/{spreadsheet_name}'
+                    spreadsheet_path = storage_manifest["location"]
                     if not os.path.isfile(spreadsheet_path):
                         raise SubmissionSpreadsheetDoesntExist()
                     else:

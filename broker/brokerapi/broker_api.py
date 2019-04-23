@@ -95,7 +95,7 @@ def submission_summary(submission_uuid):
 def submission_spreadsheet(submission_uuid):
     try:
         spreadsheet = SpreadsheetStorageService(SPREADSHEET_STORAGE_DIR).retrieve(submission_uuid)
-        spreadsheet_name = spreadsheet["spreadsheet_name"]
+        spreadsheet_name = spreadsheet["name"]
         spreadsheet_blob = spreadsheet["blob"]
 
         return send_file(
