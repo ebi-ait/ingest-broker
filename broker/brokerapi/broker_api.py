@@ -65,7 +65,7 @@ def upload_spreadsheet():
         if project and project.get('uuid'):
             project_uuid = project.get('uuid').get('uuid')
 
-        submission_url = ingest_api.createSubmission(token)
+        submission_url = ingest_api.createSubmission()
 
         _submit_spreadsheet_data(importer, path, submission_url, project_uuid)
 
