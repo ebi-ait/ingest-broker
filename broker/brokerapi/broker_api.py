@@ -39,7 +39,7 @@ HTML_HELPER = {
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = 'cells'
-cors = CORS(app)
+cors = CORS(app, expose_headers=["Content-Disposition"])
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 logger = logging.getLogger(__name__)
