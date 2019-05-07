@@ -39,7 +39,7 @@ HTML_HELPER = {
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = 'cells'
-cors = CORS(app)
+cors = CORS(app, expose_headers=["Content-Disposition"])
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,8 @@ def upload_spreadsheet():
     try:
         logger.info("Uploading spreadsheet")
         token = _check_token()
-        path = _save_spreadsheet()
+
+
         ingest_api = IngestApi()
         ingest_api.set_token(token)
         importer = XlsImporter(ingest_api)
@@ -65,7 +66,10 @@ def upload_spreadsheet():
         if project and project.get('uuid'):
             project_uuid = project.get('uuid').get('uuid')
 
-        submission_url = ingest_api.createSubmission()
+        submission = ingest_api.create_submission()
+        submission_url = submission["_links"]["self"]["href"].rsplit("{")[0]
+        submission_uuid = submission["uuid"]["uuid"]
+        path = _save_spreadsheet(submission_uuid)
 
         _submit_spreadsheet_data(importer, path, submission_url, project_uuid)
 
@@ -133,7 +137,9 @@ def _submit_spreadsheet_data(importer, path, submission_url, project_uuid):
 
 
 def _do_import(importer, path, submission_url, project_uuid):
-    importer.import_file(path, submission_url, project_uuid)
+    submission = importer.import_file(path, submission_url, project_uuid)
+    importer.insert_uuids(submission, path)
+    print(path)
     return
 
 
@@ -153,10 +159,10 @@ def _check_for_project(ingest_api):
 
 
 
-def _save_spreadsheet():
+def _save_spreadsheet(submission_uuid):
     logger.info("Saving file")
     try:
-        path = _save_file()
+        path = _save_file(submission_uuid)
     except Exception as err:
         logger.error(traceback.format_exc())
         message = "We experienced a problem when saving your spreadsheet"
@@ -173,12 +179,16 @@ def _check_token():
     return token
 
 
-def _save_file():
-    f = request.files['file']
-    filename = secure_filename(f.filename)
-    path = os.path.join(tempfile.gettempdir(), filename)
+def _save_file(submission_uuid):
+    request_file = request.files['file']
+    filename = secure_filename(request_file.filename)
+
+    spreadsheet_storage_service = SpreadsheetStorageService(
+            SPREADSHEET_STORAGE_DIR)
+    path = spreadsheet_storage_service.store(submission_uuid,
+                                      filename,
+                                      request_file.read())
     logger.info("Saved file to: " + path)
-    f.save(path)
     return path
 
 
