@@ -16,7 +16,6 @@ from broker.service.spreadsheet_storage.spreadsheet_storage_exceptions import Su
 from werkzeug.utils import secure_filename
 import os
 import io
-import tempfile
 import threading
 import logging
 import traceback
@@ -48,13 +47,23 @@ logging.getLogger("IngestApi").setLevel(logging.DEBUG)
 
 SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
 
+
 @app.route('/api_upload', methods=['POST'])
 @cross_origin()
 def upload_spreadsheet():
+    return _upload_spreadsheet()
+
+
+@app.route('/api_upload_update', methods=['POST'])
+@cross_origin()
+def upload_update_spreadsheet():
+    return _upload_spreadsheet(True)
+
+
+def _upload_spreadsheet(update=False):
     try:
         logger.info("Uploading spreadsheet")
         token = _check_token()
-
 
         ingest_api = IngestApi()
         ingest_api.set_token(token)
@@ -66,7 +75,7 @@ def upload_spreadsheet():
         if project and project.get('uuid'):
             project_uuid = project.get('uuid').get('uuid')
 
-        submission = ingest_api.create_submission()
+        submission = ingest_api.create_submission(update)
         submission_url = submission["_links"]["self"]["href"].rsplit("{")[0]
         submission_uuid = submission["uuid"]["uuid"]
         path = _save_spreadsheet(submission_uuid)
@@ -75,11 +84,13 @@ def upload_spreadsheet():
 
         return create_upload_success_response(submission_url)
     except SpreadsheetUploadError as spreadsheetUploadError:
-        return create_upload_failure_response(spreadsheetUploadError.http_code, spreadsheetUploadError.message,
+        return create_upload_failure_response(spreadsheetUploadError.http_code,
+                                              spreadsheetUploadError.message,
                                               spreadsheetUploadError.details)
     except Exception as err:
         logger.error(traceback.format_exc())
-        return create_upload_failure_response(500, "We experienced a problem while uploading your spreadsheet",
+        return create_upload_failure_response(500,
+                                              "We experienced a problem while uploading your spreadsheet",
                                               str(err))
 
 
@@ -139,7 +150,6 @@ def _submit_spreadsheet_data(importer, path, submission_url, project_uuid):
 def _do_import(importer, path, submission_url, project_uuid):
     submission = importer.import_file(path, submission_url, project_uuid)
     importer.insert_uuids(submission, path)
-    print(path)
     return
 
 
