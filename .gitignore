@@ -105,3 +105,6 @@ venv.bak/
 /setup.cfg
 
 .idea
+
+# directory for anything specific only to environment
+_local/
