@@ -75,8 +75,11 @@ def _upload_spreadsheet(update=False):
         if project and project.get('uuid'):
             project_uuid = project.get('uuid').get('uuid')
 
-        submission = ingest_api.create_submission(update)
+        submission = ingest_api.create_submission()
         submission_url = submission["_links"]["self"]["href"].rsplit("{")[0]
+        if update:
+            ingest_api.patch(submission_url, {"isUpdate": True})
+
         submission_uuid = submission["uuid"]["uuid"]
         path = _save_spreadsheet(submission_uuid)
 
