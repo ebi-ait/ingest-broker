@@ -212,7 +212,7 @@ def _save_file(submission_uuid):
 
 def create_upload_success_response(submission_url):
     ingest_api = IngestApi()
-    submission_uuid = ingest_api.getObjectUuid(submission_url)
+    submission_uuid = ingest_api.get_object_uuid(submission_url)
     display_id = submission_uuid or '<UUID not generated yet>'
     submission_id = submission_url.rsplit('/', 1)[-1]
 
