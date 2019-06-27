@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import sys
+
 from ingest.importer.spreadsheetUploadError import SpreadsheetUploadError
 
 __author__ = "jupp"
@@ -36,14 +38,20 @@ HTML_HELPER = {
     'default_status_label': DEFAULT_STATUS_LABEL
 }
 
+logging.getLogger('ingest').setLevel(logging.INFO)
+logging.getLogger('ingest.api.ingestapi').setLevel(logging.DEBUG)
+
+format = ' %(asctime)s  - %(name)s - %(levelname)s in %(filename)s:' \
+         '%(lineno)s %(funcName)s(): %(message)s'
+logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+                    format=format)
+
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__, static_folder='static')
 app.secret_key = 'cells'
 cors = CORS(app, expose_headers=["Content-Disposition"])
 app.config['CORS_HEADERS'] = 'Content-Type'
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logging.getLogger("IngestApi").setLevel(logging.DEBUG)
 
 SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
 
@@ -105,7 +113,7 @@ def _upload_spreadsheet(update=False):
 
 @app.route('/submissions/<submission_uuid>/summary', methods=['GET'])
 def submission_summary(submission_uuid):
-    submission = IngestApi().getSubmissionByUuid(submission_uuid)
+    submission = IngestApi().get_submission_by_uuid(submission_uuid)
     summary = SummaryService().summary_for_submission(submission)
 
     return app.response_class(
@@ -137,7 +145,7 @@ def submission_spreadsheet(submission_uuid):
 
 @app.route('/projects/<project_uuid>/summary', methods=['GET'])
 def project_summary(project_uuid):
-    project = IngestApi().getProjectByUuid(project_uuid)
+    project = IngestApi().get_project_by_uuid(project_uuid)
     summary = SummaryService().summary_for_project(project)
 
     return app.response_class(
@@ -169,7 +177,7 @@ def _check_for_project(ingest_api):
         project_id = request.form['project_id']
         logger.info("Found project_id: " + project_id)
 
-        project = ingest_api.getProjectById(project_id)
+        project = ingest_api.get_project_by_id(project_id)
 
     else:
         logger.info("No existing project_id found")
