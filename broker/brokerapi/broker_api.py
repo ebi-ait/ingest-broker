@@ -48,6 +48,15 @@ logging.getLogger("IngestApi").setLevel(logging.DEBUG)
 SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
 
 
+@app.route('/', methods=['GET'])
+def index():
+    new_ui_url = os.environ['INGEST_UI']
+    if new_ui_url:
+        return redirect(new_ui_url, code=302)
+
+    return json.dumps({'message': "Ingest Broker API is running!"}), 200, {'ContentType': 'application/json'}
+
+
 @app.route('/api_upload', methods=['POST'])
 @cross_origin()
 def upload_spreadsheet():
@@ -168,7 +177,6 @@ def _check_for_project(ingest_api):
     return project
 
 
-
 def _save_spreadsheet(submission_uuid):
     logger.info("Saving file")
     try:
@@ -238,91 +246,3 @@ def create_upload_failure_response(status_code, message, details):
     )
     print(failure_response)
     return failure_response
-
-
-@app.route('/')
-def index():
-    submissions = []
-    try:
-        submissions = IngestApi().getSubmissions()
-    except Exception as e:
-        flash("Can't connect to Ingest API!!", "alert-danger")
-    return render_template('index.html', submissions=submissions, helper=HTML_HELPER)
-
-
-@app.route('/submissions/<submission_id>')
-def get_submission_view(submission_id):
-    ingest_api = IngestApi()
-    submission = ingest_api.getSubmissionIfModifiedSince(submission_id, None)
-
-    if submission:
-        response = ingest_api.getProjects(submission_id)
-
-        projects = []
-
-        if '_embedded' in response and 'projects' in response['_embedded']:
-            projects = response['_embedded']['projects']
-
-        project = projects[0] if projects else None  # there should always 1 project
-
-        files = []
-
-        response = ingest_api.getFiles(submission_id)
-        if '_embedded' in response and 'files' in response['_embedded']:
-            files = response['_embedded']['files']
-
-        file_page = None
-        if 'page' in response:
-            file_page = response['page']
-            file_page['len'] = len(files)
-
-        bundle_manifests = []
-        bundle_manifest_obj = {}
-
-        response = ingest_api.getBundleManifests(submission_id)
-        if '_embedded' in response and 'bundleManifests' in response['_embedded']:
-            bundle_manifests = response['_embedded']['bundleManifests']
-
-        bundle_manifest_obj['list'] = bundle_manifests
-        bundle_manifest_obj['page'] = None
-
-        if 'page' in response:
-            bundle_manifest_obj['page'] = response['page']
-            bundle_manifest_obj['page']['len'] = len(bundle_manifests)
-
-        return render_template('submission.html',
-                               sub=submission,
-                               helper=HTML_HELPER,
-                               project=project,
-                               files=files,
-                               filePage=file_page,
-                               bundleManifestObj=bundle_manifest_obj)
-    else:
-        flash("Submission doesn't exist!", "alert-danger")
-        return redirect(url_for('index'))
-
-
-@app.route('/submissions/<submission_id>/files')
-def get_submission_files(submission_id):
-    ingest_api = IngestApi()
-    response = ingest_api.getFiles(submission_id)
-    files = []
-    if '_embedded' in response and 'files' in response['_embedded']:
-        files = response['_embedded']['files']
-    file_page = None
-    if 'page' in response:
-        file_page = response['page']
-        file_page['len'] = len(files)
-    return render_template('submission-files-table.html',
-                           files=files,
-                           filePage=file_page,
-                           helper=HTML_HELPER)
-
-
-@app.route('/submit', methods=['POST'])
-def submit_envelope():
-    sub_url = request.form.get("submissionUrl")
-    ingest_api = IngestApi()
-    if sub_url:
-        ingest_api.finishSubmission(sub_url)
-    return redirect(url_for('index'))
