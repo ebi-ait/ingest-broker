@@ -1,17 +1,11 @@
 import os
-import shutil
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
 from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
 
-TEST_STORAGE_DIR = "test_storage_dir"
-
 
 class SpreadsheetStorageServiceTest(TestCase):
-
-    def setUp(self):
-        os.mkdir(TEST_STORAGE_DIR)
 
     def test_store_spreadsheet(self):
         with TemporaryDirectory() as storage_root:
@@ -36,20 +30,17 @@ class SpreadsheetStorageServiceTest(TestCase):
             self.assertTrue(file_name in spreadsheet_files)
 
     def test_retrieve_spreadsheet(self):
-        test_storage_dir = "test_storage_dir"
-        mock_submission_uuid = "mock-uuid"
-        mock_spreadsheet_name = "mock_spreadsheet.xls"
-        mock_spreadsheet_blob = bytes.fromhex('6d6f636b64617461')
-        spreadsheet_storage_service = SpreadsheetStorageService(test_storage_dir)
+        with TemporaryDirectory() as test_storage_dir:
+            # given:
+            submission_uuid = "8e9602a9-b619-4593-ae68-3cc0f2cdf729"
+            file_name = "spreadsheet.xls"
+            spreadsheet_data = bytes.fromhex('6d6f636b64617461')
+            spreadsheet_storage_service = SpreadsheetStorageService(test_storage_dir)
 
-        try:
-            spreadsheet_storage_service.store(mock_submission_uuid, mock_spreadsheet_name,
-                                              mock_spreadsheet_blob)
-            spreadsheet = spreadsheet_storage_service.retrieve(mock_submission_uuid)
-            assert spreadsheet["name"] == mock_spreadsheet_name
-            assert spreadsheet["blob"] == mock_spreadsheet_blob
-        except Exception as e:
-            assert False
+            # when:
+            spreadsheet_storage_service.store(submission_uuid, file_name, spreadsheet_data)
+            spreadsheet = spreadsheet_storage_service.retrieve(submission_uuid)
 
-    def tearDown(self):
-        shutil.rmtree(TEST_STORAGE_DIR)
+            # then:
+            self.assertEqual(file_name, spreadsheet['name'])
+            self.assertEqual(spreadsheet_data, spreadsheet['blob'])
