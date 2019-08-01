@@ -38,6 +38,7 @@ class SpreadsheetStorageServiceTest(TestCase):
             submission_uuid = "78451f36-c782-4d2d-8491-47e06ddb860f"
             file_name = "test_spreadsheet.xls"
             spreadsheet_data = bytes.fromhex('6d6f636b64617461')
+            print()
 
             # when:
             spreadsheet_storage_service.store(submission_uuid, file_name, spreadsheet_data)
@@ -50,6 +51,23 @@ class SpreadsheetStorageServiceTest(TestCase):
             # and:
             spreadsheet_files = os.listdir(spreadsheet_directory)
             self.assertTrue(file_name in spreadsheet_files)
+
+    def test_store_updated_spreadsheet(self):
+        with TemporaryDirectory() as storage_root:
+            # given:
+            storage = SpreadsheetStorageService(storage_root)
+            submission_uuid = '44858abe-3d6a-4e86-aeed-0eb5891da6cf'
+            file_name = 'submission.xlsx'
+            storage.store(submission_uuid, file_name, b'spreadsheet')
+
+            # when: upload the same file again
+            storage.store(submission_uuid, file_name, b'updated_spreadsheet')
+
+            # then:
+            spreadsheet_directory = path.join(storage_root, submission_uuid)
+            spreadsheet_files = os.listdir(spreadsheet_directory)
+            self.assertEqual(2, len(spreadsheet_files))
+
 
     def test_retrieve_spreadsheet(self):
         with TemporaryDirectory() as test_storage_dir:
