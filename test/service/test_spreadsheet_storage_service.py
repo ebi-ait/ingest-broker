@@ -1,8 +1,30 @@
+import json
 import os
+from os import path, mkdir
+from os.path import basename
+from tempfile import NamedTemporaryFile as temp_file
+from tempfile import TemporaryFile
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
 from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
+
+
+class _TestFile:
+
+    def __init__(self, delegate_file: TemporaryFile):
+        self.delegate_file = delegate_file
+
+    def write(self, data):
+        """
+        Convenience utility so that the call to seek can be hidden.
+        """
+        self.delegate_file.write(data)
+        self.delegate_file.seek(0)
+
+
+def _as_test_file(temp_file):
+    return _TestFile(temp_file)
 
 
 class SpreadsheetStorageServiceTest(TestCase):
@@ -31,16 +53,28 @@ class SpreadsheetStorageServiceTest(TestCase):
 
     def test_retrieve_spreadsheet(self):
         with TemporaryDirectory() as test_storage_dir:
-            # given:
             submission_uuid = "8e9602a9-b619-4593-ae68-3cc0f2cdf729"
-            file_name = "spreadsheet.xls"
-            spreadsheet_data = bytes.fromhex('6d6f636b64617461')
-            spreadsheet_storage_service = SpreadsheetStorageService(test_storage_dir)
+            spreadsheet_dir = path.join(test_storage_dir, submission_uuid)
+            mkdir(spreadsheet_dir)
+            with temp_file(dir=spreadsheet_dir, suffix='.xls') as spreadsheet_file, \
+                    temp_file(dir=spreadsheet_dir, suffix='.json', mode='w+') as manifest_file:
+                # given:
+                spreadsheet_data = bytes.fromhex('6d6f636b64617461')
+                _as_test_file(spreadsheet_file).write(spreadsheet_data)
 
-            # when:
-            spreadsheet_storage_service.store(submission_uuid, file_name, spreadsheet_data)
-            spreadsheet = spreadsheet_storage_service.retrieve(submission_uuid)
+                # and: write content to file system
+                file_name = basename(spreadsheet_file.name)
+                manifest_file_name = basename(manifest_file.name)
+                manifest_json = json.dumps({'name': file_name, 'location': spreadsheet_file.name})
+                _as_test_file(manifest_file).write(manifest_json)
 
-            # then:
-            self.assertEqual(file_name, spreadsheet['name'])
-            self.assertEqual(spreadsheet_data, spreadsheet['blob'])
+                # and:
+                storage = SpreadsheetStorageService(test_storage_dir,
+                                                    storage_manifest_name=manifest_file_name)
+
+                # when:
+                spreadsheet = storage.retrieve(submission_uuid)
+
+                # then:
+                self.assertEqual(file_name, spreadsheet['name'])
+                self.assertEqual(spreadsheet_data, spreadsheet['blob'])
