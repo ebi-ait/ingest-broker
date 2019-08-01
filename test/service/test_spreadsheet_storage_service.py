@@ -44,9 +44,9 @@ class SpreadsheetStorageServiceTest(TestCase):
             spreadsheet_storage_service.store(submission_uuid, file_name, spreadsheet_data)
 
             # then:
-            spreadsheet_directory = f'{storage_root}/{submission_uuid}'
+            spreadsheet_directory = path.join(storage_root, submission_uuid)
             self.assertTrue('Spreadsheet directory does not exist.',
-                            os.path.exists(spreadsheet_directory))
+                            path.exists(spreadsheet_directory))
 
             # and:
             spreadsheet_files = os.listdir(spreadsheet_directory)
@@ -67,7 +67,6 @@ class SpreadsheetStorageServiceTest(TestCase):
             spreadsheet_directory = path.join(storage_root, submission_uuid)
             spreadsheet_files = os.listdir(spreadsheet_directory)
             self.assertEqual(2, len(spreadsheet_files))
-
 
     def test_retrieve_spreadsheet(self):
         with TemporaryDirectory() as test_storage_dir:
