@@ -24,20 +24,24 @@ class SpreadsheetStorageService:
         if not path.exists(submission_dir):
             os.mkdir(submission_dir)
         try:
-            submission_spreadsheet_path = path.join(submission_dir, spreadsheet_name)
-            index = 0
-            while path.exists(submission_spreadsheet_path):
-                submission_spreadsheet_path = path.join(submission_dir,
-                                                        f'{spreadsheet_name}{index}.xlsx')
-                index += 1
+            file_path = self._determine_file_path(submission_dir, spreadsheet_name)
             storage_manifest_path = path.join(submission_dir, self.storage_manifest_name)
-            with open(submission_spreadsheet_path, "wb") as spreadsheet_file:
+            with open(file_path, "wb") as spreadsheet_file:
                 spreadsheet_file.write(spreadsheet_blob)
                 with open(storage_manifest_path, "w") as storage_manfiest:
-                    json.dump({"name": spreadsheet_name, "location": submission_spreadsheet_path}, storage_manfiest)
-                    return submission_spreadsheet_path
+                    json.dump({"name": spreadsheet_name, "location": file_path}, storage_manfiest)
+                    return file_path
         except FileExistsError:
             raise SubmissionSpreadsheetAlreadyExists()
+
+    @staticmethod
+    def _determine_file_path(submission_dir, spreadsheet_name):
+        file_path = path.join(submission_dir, spreadsheet_name)
+        index = 0
+        while path.exists(file_path):
+            file_path = path.join(submission_dir, f'{spreadsheet_name}{index}.xlsx')
+            index += 1
+        return file_path
 
     def retrieve(self, submission_uuid):
         try:
