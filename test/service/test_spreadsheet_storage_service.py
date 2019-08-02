@@ -54,12 +54,10 @@ class SpreadsheetStorageServiceTest(TestCase):
 
             # and:
             submission_uuid = "78451f36-c782-4d2d-8491-47e06ddb860f"
-            file_name = "test_spreadsheet.xls"
-            spreadsheet_data = bytes.fromhex('6d6f636b64617461')
+            spreadsheet_data = b'spreadsheet_data'
 
             # when:
-            file_path = spreadsheet_storage_service.store(submission_uuid, file_name,
-                                                          spreadsheet_data)
+            file_path = spreadsheet_storage_service.store(submission_uuid, spreadsheet_data)
 
             # then:
             excel_files = _as_test_dir(storage_root).list_files(ends_with='.xlsx')
@@ -72,8 +70,7 @@ class SpreadsheetStorageServiceTest(TestCase):
             # given:
             storage = SpreadsheetStorageService(storage_root)
             submission_uuid = '44858abe-3d6a-4e86-aeed-0eb5891da6cf'
-            file_name = 'submission.xlsx'
-            storage.store(submission_uuid, file_name, b'spreadsheet')
+            storage.store(submission_uuid, b'spreadsheet')
 
             # and: assume file is stored
             spreadsheet_directory = _as_test_dir(storage_root)
@@ -81,7 +78,7 @@ class SpreadsheetStorageServiceTest(TestCase):
 
             # when: upload the same file again
             updated_data = b'updated_spreadsheet'
-            file_path = storage.store(submission_uuid, file_name, updated_data)
+            file_path = storage.store(submission_uuid, updated_data)
 
             # then:
             with open(file_path, 'rb') as stored_file:

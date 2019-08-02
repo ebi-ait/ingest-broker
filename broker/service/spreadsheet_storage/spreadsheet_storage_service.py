@@ -11,15 +11,13 @@ class SpreadsheetStorageService:
         self.storage_dir = storage_dir
         self.storage_manifest_name = storage_manifest_name
 
-    # TODO remove spreadsheet_name
-    def store(self, submission_uuid, spreadsheet_name, spreadsheet_blob):
+    def store(self, submission_uuid, spreadsheet_blob):
         """
         Stores a given spreadsheet at path <submission_uuid>/<spreadsheetname>, local to
         the storage directory
-        :param submission_uuid:
-        :param spreadsheet_name:
-        :param spreadsheet_blob:
-        :return:
+        :param submission_uuid: the UUID for the spreadsheet submission
+        :param spreadsheet_blob: spreadsheet data in bytes
+        :return: the file path of the spreadsheet file in the storage
         """
         try:
             file_path = path.join(self.storage_dir, f'{submission_uuid}.xlsx')
