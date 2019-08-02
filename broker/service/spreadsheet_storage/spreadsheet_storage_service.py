@@ -1,5 +1,7 @@
 import os
 import json
+from os import path
+
 from .spreadsheet_storage_exceptions import SubmissionSpreadsheetAlreadyExists, SubmissionSpreadsheetDoesntExist
 
 
@@ -18,11 +20,17 @@ class SpreadsheetStorageService:
         :param spreadsheet_blob:
         :return:
         """
-        submission_dir = f'{self.storage_dir}/{submission_uuid}'
-        try:
+        submission_dir = path.join(self.storage_dir, submission_uuid)
+        if not path.exists(submission_dir):
             os.mkdir(submission_dir)
-            submission_spreadsheet_path = f'{submission_dir}/{spreadsheet_name}'
-            storage_manifest_path = f'{submission_dir}/{self.storage_manifest_name}'
+        try:
+            submission_spreadsheet_path = path.join(submission_dir, spreadsheet_name)
+            index = 0
+            while path.exists(submission_spreadsheet_path):
+                submission_spreadsheet_path = path.join(submission_dir,
+                                                        f'{spreadsheet_name}{index}.xlsx')
+                index += 1
+            storage_manifest_path = path.join(submission_dir, self.storage_manifest_name)
             with open(submission_spreadsheet_path, "wb") as spreadsheet_file:
                 spreadsheet_file.write(spreadsheet_blob)
                 with open(storage_manifest_path, "w") as storage_manfiest:

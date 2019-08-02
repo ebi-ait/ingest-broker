@@ -23,8 +23,26 @@ class _TestFile:
         self.delegate_file.seek(0)
 
 
-def _as_test_file(temp_file):
-    return _TestFile(temp_file)
+def _as_test_file(test_file):
+    return _TestFile(test_file)
+
+class _TestDirectory:
+
+    def __init__(self, directory_path):
+        self.directory_path = directory_path
+
+    def list_files(self, ends_with=None):
+        if path.isdir(self.directory_path):
+            files = os.listdir(self.directory_path)
+            if ends_with:
+                files = list(filter(lambda file: file.endswith(ends_with), files))
+            return files
+        else:
+            raise RuntimeError(f'{self.directory_path} is not a directory')
+
+
+def _as_test_dir(test_directory):
+    return _TestDirectory(test_directory)
 
 
 class SpreadsheetStorageServiceTest(TestCase):
@@ -60,13 +78,15 @@ class SpreadsheetStorageServiceTest(TestCase):
             file_name = 'submission.xlsx'
             storage.store(submission_uuid, file_name, b'spreadsheet')
 
+            # and: assume file is stored
+            spreadsheet_directory = _as_test_dir(path.join(storage_root, submission_uuid))
+            self.assertEqual(1, len(spreadsheet_directory.list_files(ends_with='.xlsx')))
+
             # when: upload the same file again
             storage.store(submission_uuid, file_name, b'updated_spreadsheet')
 
             # then:
-            spreadsheet_directory = path.join(storage_root, submission_uuid)
-            spreadsheet_files = os.listdir(spreadsheet_directory)
-            self.assertEqual(2, len(spreadsheet_files))
+            self.assertEqual(2, len(spreadsheet_directory.list_files(ends_with='.xlsx')))
 
     def test_retrieve_spreadsheet(self):
         with TemporaryDirectory() as test_storage_dir:
