@@ -4,6 +4,8 @@ from tempfile import TemporaryDirectory
 from tempfile import TemporaryFile
 from unittest import TestCase
 
+from broker.service.spreadsheet_storage.spreadsheet_storage_exceptions import \
+    SubmissionSpreadsheetDoesntExist
 from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
 
 
@@ -103,3 +105,12 @@ class SpreadsheetStorageServiceTest(TestCase):
             # then:
             self.assertEqual(file_path, file_manifest.get('name'))
             self.assertEqual(spreadsheet_data, file_manifest.get('blob'))
+
+    def test_retrieve_non_existent_spreadsheet(self):
+        with TemporaryDirectory() as storage_dir:
+            # given:
+            storage = SpreadsheetStorageService(storage_dir)
+
+            # expect:
+            self.assertRaises(SubmissionSpreadsheetDoesntExist, storage.retrieve,
+                              'd99bf112-b10c-450d-97d7-5359a31065b5')

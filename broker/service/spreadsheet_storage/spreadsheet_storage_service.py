@@ -1,5 +1,7 @@
 from os import path
 
+from broker.service.spreadsheet_storage.spreadsheet_storage_exceptions import \
+    SubmissionSpreadsheetDoesntExist
 from .spreadsheet_storage_exceptions import SubmissionSpreadsheetAlreadyExists
 
 
@@ -28,9 +30,12 @@ class SpreadsheetStorageService:
             raise SubmissionSpreadsheetAlreadyExists()
 
     def retrieve(self, submission_uuid):
-        file_path = path.join(self.storage_dir, f'{submission_uuid}.xlsx')
-        file_manifest = {'name': file_path}
-        with open(file_path, 'rb') as spreadsheet_file:
-            data = spreadsheet_file.read()
-            file_manifest['blob'] = data
-        return file_manifest
+        try:
+            file_path = path.join(self.storage_dir, f'{submission_uuid}.xlsx')
+            file_manifest = {'name': file_path}
+            with open(file_path, 'rb') as spreadsheet_file:
+                data = spreadsheet_file.read()
+                file_manifest['blob'] = data
+            return file_manifest
+        except FileNotFoundError:
+            raise SubmissionSpreadsheetDoesntExist()
