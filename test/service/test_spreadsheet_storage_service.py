@@ -56,19 +56,16 @@ class SpreadsheetStorageServiceTest(TestCase):
             submission_uuid = "78451f36-c782-4d2d-8491-47e06ddb860f"
             file_name = "test_spreadsheet.xls"
             spreadsheet_data = bytes.fromhex('6d6f636b64617461')
-            print()
 
             # when:
-            spreadsheet_storage_service.store(submission_uuid, file_name, spreadsheet_data)
+            file_path = spreadsheet_storage_service.store(submission_uuid, file_name,
+                                                          spreadsheet_data)
 
             # then:
-            spreadsheet_directory = path.join(storage_root, submission_uuid)
-            self.assertTrue('Spreadsheet directory does not exist.',
-                            path.exists(spreadsheet_directory))
-
-            # and:
-            spreadsheet_files = os.listdir(spreadsheet_directory)
-            self.assertTrue(file_name in spreadsheet_files)
+            excel_files = _as_test_dir(storage_root).list_files(ends_with='.xlsx')
+            self.assertEqual(1, len(excel_files))
+            with open(file_path, 'rb') as stored_file:
+                self.assertEqual(stored_file.readline(), spreadsheet_data)
 
     def test_store_updated_spreadsheet(self):
         with TemporaryDirectory() as storage_root:
@@ -79,14 +76,16 @@ class SpreadsheetStorageServiceTest(TestCase):
             storage.store(submission_uuid, file_name, b'spreadsheet')
 
             # and: assume file is stored
-            spreadsheet_directory = _as_test_dir(path.join(storage_root, submission_uuid))
+            spreadsheet_directory = _as_test_dir(storage_root)
             self.assertEqual(1, len(spreadsheet_directory.list_files(ends_with='.xlsx')))
 
             # when: upload the same file again
-            storage.store(submission_uuid, file_name, b'updated_spreadsheet')
+            updated_data = b'updated_spreadsheet'
+            file_path = storage.store(submission_uuid, file_name, updated_data)
 
             # then:
-            self.assertEqual(2, len(spreadsheet_directory.list_files(ends_with='.xlsx')))
+            with open(file_path, 'rb') as stored_file:
+                self.assertEqual(stored_file.readline(), updated_data)
 
     def test_retrieve_spreadsheet(self):
         with TemporaryDirectory() as test_storage_dir:
