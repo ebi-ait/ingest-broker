@@ -39,19 +39,12 @@ class SpreadsheetUploadServiceTest(TestCase):
         self.importer.import_file = Mock(return_value=(mock_submission, mock_template_mgr))
 
         # when
-        output = spreadsheet_upload_service._upload(submission_resource, request_file)
+        spreadsheet_upload_service._upload(submission_resource, 'path')
 
         # then
-        mock_secure_filename.assert_called_once_with('filename')
-        self.storage_service.store.assert_called_once_with('submission-uuid', 'secure-filename', 'content')
-
         self.importer.import_file('path', 'url', None)
 
         mock_importer.create_update_spreadsheet.assert_called_with(mock_submission, mock_template_mgr, 'path')
-
-        self.assertEqual(output.submission, mock_submission)
-        self.assertEqual(output.template_manager, mock_template_mgr)
-        self.assertEqual(output.path, 'path')
 
     @patch('broker.service.spreadsheet_upload_service.secure_filename')
     @patch('broker.service.spreadsheet_upload_service.XlsImporter')
@@ -80,15 +73,9 @@ class SpreadsheetUploadServiceTest(TestCase):
         self.importer.import_file = Mock(return_value=(mock_submission, mock_template_mgr))
 
         # when
-        output = spreadsheet_upload_service._upload(submission_resource, request_file)
+        spreadsheet_upload_service._upload(submission_resource, 'path')
 
         # then
-        mock_secure_filename.assert_called_once_with('filename')
-        self.storage_service.store.assert_called_once_with('submission-uuid', 'secure-filename', 'content')
 
         self.importer.import_file('path', 'url', None)
         mock_importer.create_update_spreadsheet.assert_called_with(mock_submission, mock_template_mgr, 'path')
-
-        self.assertEqual(output.submission, mock_submission)
-        self.assertEqual(output.template_manager, mock_template_mgr)
-        self.assertEqual(output.path, 'path')

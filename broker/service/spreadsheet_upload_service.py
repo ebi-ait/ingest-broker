@@ -1,14 +1,11 @@
 import logging
 import threading
-from collections import namedtuple
 
 from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
 from werkzeug.utils import secure_filename
 
 from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
-
-SpreadsheetUploadOutput = namedtuple('SpreadsheetUploadOutput', 'submission template_manager path')
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,21 +22,23 @@ class SpreadsheetUploadService:
 
         self.ingest_api.set_token(token)
         submission_resource = self.ingest_api.create_submission(update_submission=is_update)
+
+        filename = secure_filename(request_file.filename)
+
+        submission_uuid = submission_resource["uuid"]["uuid"]
+        path = self.storage_service.store(submission_uuid, filename, request_file.read())
+
         thread = threading.Thread(target=self._upload,
-                                  args=(submission_resource, request_file, project_uuid))
+                                  args=(submission_resource, path, project_uuid))
         thread.start()
         return submission_resource
 
-    def _upload(self, submission_resource, request_file, project_uuid=None) -> SpreadsheetUploadOutput:
+    def _upload(self, submission_resource, path, project_uuid=None):
         _LOGGER.info('Spreadsheet started!')
         submission_url = submission_resource["_links"]["self"]["href"].rsplit("{")[0]
-        submission_uuid = submission_resource["uuid"]["uuid"]
-        filename = secure_filename(request_file.filename)
-        path = self.storage_service.store(submission_uuid, filename, request_file.read())
         submission, template_manager = self.importer.import_file(path, submission_url, project_uuid)
         XlsImporter.create_update_spreadsheet(submission, template_manager, path)
         _LOGGER.info('Spreadsheet upload done!')
-        return SpreadsheetUploadOutput(submission=submission, template_manager=template_manager, path=path)
 
 
 class SpreadsheetUploadError(Exception):
