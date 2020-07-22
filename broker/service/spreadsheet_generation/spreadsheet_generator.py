@@ -14,6 +14,7 @@ from operator import iconcat
 import tempfile
 import yaml
 
+
 @dataclass
 class TabColumn:
     name: str
@@ -70,7 +71,7 @@ class ParsedTab:
     Represents the layout of a spreadsheet tab.
 
     sub_tabs refers to the mechanism whereby modules are represented in adjacent tabs e.g a ParsedTab for Project
-    would have Contributors in its sub_tabs.
+    might have Contributors, Funders, and Publications in its sub_tabs.
     """
     schema_name: str
     display_name: str
@@ -163,7 +164,7 @@ class SpreadsheetGenerator:
             return []
         else:
             return [self.link_column_for_schema(ParseUtils.parse_schema_spec(entity, self.schema_template.meta_data_properties[entity]))
-                     for entity in link_spec.link_entities]
+                     for entity in link_spec.link_entities + link_spec.link_protocols]
 
     def link_column_for_schema(self, schema_spec: SchemaSpec) -> TabColumn:
         display_name = self.tab_name_for_type(schema_spec)
@@ -178,7 +179,7 @@ class SpreadsheetGenerator:
                              description="A file ID",
                              example="ABC12345",
                              path=f'{schema_spec.field_name}.file_core.file_id')
-        elif schema_spec.domain_entity == "protocol":
+        elif "protocol" in schema_spec.domain_entity:  # the domain entity for protocol schemas can be something like "protocol/imaging"
             return TabColumn(name=f'{display_name} - ID',
                              description="A protocol ID",
                              example="ABC12345",
@@ -190,7 +191,6 @@ class SpreadsheetGenerator:
                              path=f'{schema_spec.field_name}.process.process_id')
         else:
             raise
-
 
     @staticmethod
     def columns_for_ontology_module(ontology_spec: OntologySpec, context: List[str]) -> List[TabColumn]:
@@ -258,7 +258,6 @@ class SpreadsheetGenerator:
             return context[0]
         else:
             return f'{context[0]}.{SpreadsheetGenerator.context_to_path_string(context[1:])}'
-
 
     @staticmethod
     def exclude_fields(field_specs: List[FieldSpec], modules_to_exclude: List[str], fields_to_exclude: List[str]) -> List[FieldSpec]:
