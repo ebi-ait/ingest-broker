@@ -28,6 +28,7 @@ class TemplateTab:
     display_name: str
     columns: List[str]
 
+
 @dataclass
 class TemplateYaml:
     tabs: List[TemplateTab]
@@ -84,13 +85,12 @@ class SpreadsheetGenerator:
         self.schema_template = SchemaTemplate(ingest_api_url=ingest_api.url)
 
     def generate(self, spreadsheet_spec: SpreadsheetSpec) -> FileIO:
-        tabs = []
+        parsed_tabs = []
         for type_spec in spreadsheet_spec.types:
             tab_for_type = self.tab_for_type(type_spec)
-            tabs.append(tab_for_type)
+            parsed_tabs.append(tab_for_type)
 
-        template_tabs = [TemplateTab(t.schema_name, t.display_name, [col.path for col in t.columns])
-                         for t in tabs]
+        template_tabs = self.template_tabs_from_parsed_tabs(parsed_tabs)
 
         yml = TemplateYaml(template_tabs)
 
@@ -104,7 +104,7 @@ class SpreadsheetGenerator:
                 spreadsheet_builder = VanillaSpreadsheetBuilder(f.name, True)
                 spreadsheet_builder.generate_spreadsheet(tabs_template=yaml_file.name,
                                                          schema_urls=self.schema_template.metadata_schema_urls,
-                                                         include_schemas_tab=False)
+                                                         include_schemas_tab=True)
                 spreadsheet_builder.save_spreadsheet()
 
     def tab_for_type(self, type_spec: TypeSpec) -> ParsedTab:
@@ -115,13 +115,13 @@ class SpreadsheetGenerator:
         parsed_tab = self._generate_tab(self.tab_name_for_type(schema_spec), schema_spec,
                                         exclude_modules=type_spec.exclude_modules,
                                         exclude_fields=type_spec.exclude_fields,
-                                        context=schema_name)
-        link_columns = self.links_for_tab(type_spec)
-        parsed_tab.columns.extend(link_columns)
+                                        context=[schema_name])
+        parsed_tab.columns.extend(self.links_for_tab(type_spec))
+        parsed_tab.columns.extend(self.process_columns() if type_spec.embed_process else [])
 
         return parsed_tab
 
-    def _generate_tab(self, tab_name: str, schema_spec: SchemaSpec, exclude_modules: List[str], exclude_fields: List[str], context: str) -> ParsedTab:
+    def _generate_tab(self, tab_name: str, schema_spec: SchemaSpec, exclude_modules: List[str], exclude_fields: List[str], context: List[str]) -> ParsedTab:
         columns: List[TabColumn] = []
         subtabs: List[ParsedTab] = []
 
@@ -133,12 +133,12 @@ class SpreadsheetGenerator:
                 if field.multivalue:
                     # generate sub-tabs for this multivalue module
                     subtab_name = f'{tab_name} - {self.tab_name_for_sub_module(schema_spec, field)}'
-                    subtab = self._generate_tab(subtab_name, field, exclude_modules, exclude_fields, context=f'{context}.{field.field_name}')
+                    subtab = self._generate_tab(subtab_name, field, exclude_modules, exclude_fields, context=context + [field.field_name])
                     subtabs.append(subtab)
                 else:
-                    columns.extend(self.columns_for_field(field, context=f'{context}.{field.field_name}'))
+                    columns.extend(self.columns_for_field(field, context=context + [field.field_name]))
             elif self.field_is_atomic(field):
-                columns.append(self.parse_atomic_column(field, context))
+                columns.append(self.parse_atomic_column(field, context + [field.field_name]))
 
         return ParsedTab(schema_spec.field_name, tab_name, columns, subtabs)
 
@@ -193,32 +193,38 @@ class SpreadsheetGenerator:
 
 
     @staticmethod
-    def columns_for_ontology_module(ontology_spec: OntologySpec, context: str) -> List[TabColumn]:
+    def columns_for_ontology_module(ontology_spec: OntologySpec, context: List[str]) -> List[TabColumn]:
+        text_column_context = context + [ontology_spec.field_name, ontology_spec.text_field.field_name]
         text_column = TabColumn(name=ontology_spec.text_field.user_friendly,
                                 description=ontology_spec.text_field.description,
                                 example=ontology_spec.text_field.example,
-                                path=f'{context}.{ontology_spec.field_name}.{ontology_spec.text_field.field_name}')
+                                path=SpreadsheetGenerator.context_to_path_string(text_column_context))
 
+        ontology_column_context = context + [ontology_spec.field_name, ontology_spec.ontology_field.field_name]
         ontology_column = TabColumn(name=ontology_spec.ontology_field.user_friendly,
                                     description=ontology_spec.ontology_field.description,
                                     example=ontology_spec.ontology_field.example,
-                                    path=f'{context}.{ontology_spec.field_name}.{ontology_spec.ontology_field.field_name}')
+                                    path=SpreadsheetGenerator.context_to_path_string(ontology_column_context))
 
+        label_column_context = context + [ontology_spec.field_name, ontology_spec.ontology_label.field_name]
         label_column = TabColumn(name=ontology_spec.ontology_label.user_friendly,
                                  description=ontology_spec.ontology_label.description,
                                  example=ontology_spec.ontology_label.example,
-                                 path=f'{context}.{ontology_spec.field_name}.{ontology_spec.ontology_label.field_name}')
+                                 path=SpreadsheetGenerator.context_to_path_string(label_column_context))
 
         return [text_column, ontology_column, label_column]
 
     @staticmethod
-    def columns_for_field(field: FieldSpec, context: str) -> List[TabColumn]:
+    def columns_for_field(field: FieldSpec, context: List[str]) -> List[TabColumn]:
         if SpreadsheetGenerator.field_is_atomic(field):
             return [SpreadsheetGenerator.parse_atomic_column(field, context)]
         elif SpreadsheetGenerator.field_is_object(field):
-            return reduce(iconcat,
-                          [SpreadsheetGenerator.columns_for_field(field, context) for field in field.fields],
-                          [])
+            return SpreadsheetGenerator.flatten([SpreadsheetGenerator.columns_for_field(field, context + [field.field_name])
+                                                 for field in field.fields])
+
+    def process_columns(self) -> List[TabColumn]:
+        process_schema_spec = ParseUtils.parse_schema_spec("process", self.schema_template.meta_data_properties["process"])
+        return SpreadsheetGenerator.columns_for_field(process_schema_spec, ["process"])
 
     @staticmethod
     def field_is_atomic(field: FieldSpec) -> bool:
@@ -234,12 +240,39 @@ class SpreadsheetGenerator:
         return isinstance(field, OntologySpec)
 
     @staticmethod
-    def parse_atomic_column(field_spec: Union[StringSpec, NumberSpec], context: str) -> TabColumn:
+    def parse_atomic_column(field_spec: Union[StringSpec, NumberSpec], context: List[str]) -> TabColumn:
         return TabColumn(name=field_spec.user_friendly,
                          description=field_spec.description,
                          example=field_spec.example,
-                         path=f'{context}.{field_spec.field_name}')
+                         path=SpreadsheetGenerator.context_to_path_string(context))
+
+    @staticmethod
+    def context_to_path_string(context: List[str]) -> str:
+        """
+        e.g given context = ["process", "process_core", "process_id"], return "process.process_core.process_id"
+        e.g given ["process"], return just "process"
+        """
+        if len(context) == 0:
+            return ""
+        elif len(context) == 1:
+            return context[0]
+        else:
+            return f'{context[0]}.{SpreadsheetGenerator.context_to_path_string(context[1:])}'
+
 
     @staticmethod
     def exclude_fields(field_specs: List[FieldSpec], modules_to_exclude: List[str], fields_to_exclude: List[str]) -> List[FieldSpec]:
         return [f for f in field_specs if f.field_name not in modules_to_exclude and f.field_name not in fields_to_exclude]
+
+    @staticmethod
+    def template_tabs_from_parsed_tabs(parsed_tabs: List[ParsedTab]) -> List[TemplateTab]:
+        all_tabs = SpreadsheetGenerator.flatten([[tab] + tab.sub_tabs for tab in parsed_tabs])
+        return [TemplateTab(t.schema_name, t.display_name, [col.path for col in t.columns])
+                for t in all_tabs]
+
+    @staticmethod
+    def flatten(list_of_lists: List[List]) -> List:
+        """
+        e.g given [[1,2], [3,4], [5,6,7]] return [1,2,3,4,5,6,7]
+        """
+        return reduce(iconcat, list_of_lists, [])

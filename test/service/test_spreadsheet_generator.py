@@ -13,3 +13,13 @@ class TestSpreadsheetGenerator(TestCase):
         parsed_tab = SpreadsheetGenerator(ingest_api).tab_for_type(cell_suspension_spec)
 
         self.assertTrue("donor_organism.biomaterial_core.biomaterial_id" in [col.path for col in parsed_tab.columns])
+
+    def test_context_to_string(self):
+        context = ["project", "project_core", "project_shortname"]
+        self.assertEqual(SpreadsheetGenerator.context_to_path_string(context), "project.project_core.project_shortname")
+
+        context = ["project"]
+        self.assertEqual(SpreadsheetGenerator.context_to_path_string(context), "project")
+
+        context = []
+        self.assertEqual(SpreadsheetGenerator.context_to_path_string(context), "")
