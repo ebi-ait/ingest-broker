@@ -6,14 +6,19 @@ from ingest.template.tab_config import TabConfig
 from broker.service.spreadsheet_generation.schema_spec.schema_spec import SchemaSpec, ParseUtils, FieldSpec, ObjectSpec, StringSpec, IntegerSpec, NumberSpec, OntologySpec, BooleanSpec
 
 from dataclasses import dataclass
-from io import FileIO
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, BinaryIO
 
 from functools import reduce
 from operator import iconcat
 
 import tempfile
 import yaml
+from hashlib import md5
+from collections import OrderedDict
+import json
+from enum import Enum
+from multiprocessing.pool import Pool
+from multiprocessing.dummy import Pool as create_pool
 
 
 @dataclass
@@ -51,6 +56,19 @@ class LinkSpec:
     link_entities: List[str]
     link_protocols: List[str]
 
+    @staticmethod
+    def from_dict(data: Dict) -> 'LinkSpec':
+        try:
+            return LinkSpec(data["linkEntities"], data["linkProtocols"])
+        except (IndexError, KeyError) as e:
+            raise
+
+    def to_json_dict(self) -> Dict:
+        return OrderedDict({
+            "linkEntities": self.link_entities,
+            "linkProtocols": self.link_protocols
+        })
+
 
 @dataclass
 class TypeSpec:
@@ -60,10 +78,47 @@ class TypeSpec:
     embed_process: bool
     link_spec: Optional[LinkSpec]
 
+    @staticmethod
+    def from_json_dict(data: Dict) -> 'TypeSpec':
+        try:
+            link_spec = LinkSpec.from_dict(data["linkSpec"]) if data.get("linkSpec") else None
+            return TypeSpec(data["schemaName"], data["excludeModules"], data["excludeFields"], data["embedProcess"], link_spec)
+        except (IndexError, KeyError) as e:
+            raise
+
+    def to_json_dict(self) -> Dict:
+        return OrderedDict({
+            "schemaName": self.schema_name,
+            "excludeModules": self.exclude_modules,
+            "excludeFields": self.exclude_fields,
+            "embedProcess": self.embed_process,
+            "linkSpec": self.link_spec.to_json_dict()
+        })
+
 
 @dataclass
 class SpreadsheetSpec:
     types: List[TypeSpec]
+
+    @staticmethod
+    def from_dict(data: Dict) -> 'SpreadsheetSpec':
+        try:
+            return SpreadsheetSpec([TypeSpec.from_json_dict(type_data) for type_data in data["types"]])
+        except (IndexError, KeyError) as e:
+            raise e
+
+    def to_dict(self) -> Dict:
+        return OrderedDict({
+            "types": [TypeSpec.to_json_dict(t_spec) for t_spec in self.types]
+        })
+
+    def hashcode(self) -> str:
+        """
+        generate an md5 checksum of this spec, for purpose of spreadsheets generated from this spec
+        """
+        spreadsheet_spec_dict = self.to_dict()
+        sorted_keys = dict(sorted(spreadsheet_spec_dict.items()))
+        return md5(json.dumps(sorted_keys).encode("utf-8")).hexdigest()
 
 
 @dataclass
@@ -78,6 +133,15 @@ class ParsedTab:
     display_name: str
     columns: List[TabColumn]
     sub_tabs: List['ParsedTab']
+
+
+@dataclass
+class JobSpec:
+    JobStatus = Enum(["STARTED", "COMPLETE", "ERROR"])
+
+    spreadsheet_spec: SpreadsheetSpec
+    status: JobStatus
+    output_path: str
 
 
 class SpreadsheetGenerator:
@@ -279,3 +343,58 @@ class SpreadsheetGenerator:
         e.g given [[1,2], [3,4], [5,6,7]] return [1,2,3,4,5,6,7]
         """
         return reduce(iconcat, list_of_lists, [])
+
+
+JobStatus = Enum(["STARTED", "COMPLETE", "ERROR"])
+
+
+@dataclass
+class JobSpec:
+    status: JobStatus
+    job_id: str
+    spreadsheet_path: str
+
+    @staticmethod
+    def from_dict(data: Dict) -> 'JobSpec':
+        try:
+            return JobSpec(data["status"], data["job_id"], data["spreadsheet_path"])
+        except:
+            raise
+
+    def to_dict(self) -> Dict:
+        return {
+            "status": str(self.status),
+            "job_id": self.job_id,
+            "spreadsheet_path": self.spreadsheet_path
+        }
+
+
+class SpreadsheetJobManager:
+    def __init__(self, spreadsheet_generator: SpreadsheetGenerator, output_dir_path: str, worker_pool: Optional[Pool]):
+        self.spreadsheet_generator = spreadsheet_generator
+        self.output_dir_path = output_dir_path
+        self.worker_pool = worker_pool if worker_pool is not None else create_pool(5)
+
+    def create_job(self, spreadsheet_spec: SpreadsheetSpec) -> JobSpec:
+        job_id = spreadsheet_spec.hashcode()
+        spreadsheet_output_path = f'{self.output_dir_path}/{job_id}.xlsx'
+        job_spec = JobSpec(JobStatus.STARTED, job_id, spreadsheet_output_path)
+        job_spec_path = f'{self.output_dir_path}/{job_id}.json'
+
+        with open(job_spec_path, "w") as job_spec_file:
+            json.dump(job_spec.to_dict(), job_spec_file)
+
+        self.worker_pool.apply_async(lambda: self.spreadsheet_generator.generate(spreadsheet_spec, spreadsheet_output_path))
+
+        return job_spec
+
+    def status_for_job(self, job_id: str) -> JobStatus:
+        return self.load_job_spec(job_id).status
+
+    def spreadsheet_for_job(self, job_id) -> BinaryIO:
+        spreadsheet_path = self.load_job_spec(job_id).spreadsheet_path
+        return open(spreadsheet_path, "rb")
+
+    def load_job_spec(self, job_id) -> JobSpec:
+        with open(f'{self.output_dir_path}/{job_id}') as spreadsheet_job_file:
+            return JobSpec.from_dict(json.load(spreadsheet_job_file))

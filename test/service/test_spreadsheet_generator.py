@@ -24,6 +24,37 @@ class TestSpreadsheetGenerator(TestCase):
         context = []
         self.assertEqual(SpreadsheetGenerator.context_to_path_string(context), "")
 
+    def test_spreadsheet_spec_json_deserialization(self):
+        test_spreadsheet_spec_json = {
+            "types": [{
+                "schemaName": "donor_organism",
+                "excludeFields": ["human_specific"],
+                "excludeModules": ["death"],
+                "embedProcess": True,
+                "linkSpec": {
+                    "linkEntities": [],
+                    "linkProtocols": ["biomaterial_collection_protocol"]
+                }}]
+        }
+
+        deserialized_spec = SpreadsheetSpec.from_dict(test_spreadsheet_spec_json)
+        self.assertTrue(len(deserialized_spec.types) == 1)
+        self.assertTrue(deserialized_spec.types[0].schema_name == "donor_organism")
+        self.assertTrue("human_specific" in deserialized_spec.types[0].exclude_fields)
+        self.assertTrue("death" in deserialized_spec.types[0].exclude_modules)
+        self.assertTrue(deserialized_spec.types[0].link_spec is not None)
+        self.assertTrue(len(deserialized_spec.types[0].link_spec.link_entities) == 0)
+        self.assertTrue("biomaterial_collection_protocol" in deserialized_spec.types[0].link_spec.link_protocols)
+
+    def test_spreadsheet_spec_hashcode(self):
+        test_type_spec_1 = TypeSpec("project", [], [], False, LinkSpec(["specimen_from_organism"], []))
+        test_type_spec_2 = TypeSpec("specimen_from_organism", [], [], True, LinkSpec(["donor_organism"], []))
+
+        spreadsheet_spec = SpreadsheetSpec([test_type_spec_1, test_type_spec_2])
+        spreadsheet_spec_dict = spreadsheet_spec.to_dict()
+
+        self.assertEqual(spreadsheet_spec.hashcode(), SpreadsheetSpec.from_dict(spreadsheet_spec_dict).hashcode())
+
     @skip
     def test_generate(self):
         ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
