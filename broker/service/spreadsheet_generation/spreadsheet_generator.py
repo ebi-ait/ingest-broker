@@ -1,6 +1,7 @@
 from ingest.api.ingestapi import IngestApi
 from ingest.template.schema_template import SchemaTemplate
 from ingest.template.vanilla_spreadsheet_builder import VanillaSpreadsheetBuilder
+from ingest.template.tab_config import TabConfig
 
 from broker.service.spreadsheet_generation.schema_spec.schema_spec import SchemaSpec, ParseUtils, FieldSpec, ObjectSpec, StringSpec, IntegerSpec, NumberSpec, OntologySpec, BooleanSpec
 
@@ -85,7 +86,7 @@ class SpreadsheetGenerator:
         self.ingest_api = ingest_api
         self.schema_template = SchemaTemplate(ingest_api_url=ingest_api.url)
 
-    def generate(self, spreadsheet_spec: SpreadsheetSpec) -> FileIO:
+    def generate(self, spreadsheet_spec: SpreadsheetSpec, output_file_path: Optional[str]) -> str:
         parsed_tabs = []
         for type_spec in spreadsheet_spec.types:
             tab_for_type = self.tab_for_type(type_spec)
@@ -95,18 +96,21 @@ class SpreadsheetGenerator:
 
         yml = TemplateYaml(template_tabs)
 
-        return self.spreadsheet_from_template_yaml(yml)
+        return self.spreadsheet_from_template_yaml(yml, output_file_path)
 
-    def spreadsheet_from_template_yaml(self, template_yaml: TemplateYaml) -> FileIO:
+    def spreadsheet_from_template_yaml(self, template_yaml: TemplateYaml, output_file_path: Optional[str]) -> str:
         with tempfile.NamedTemporaryFile('w') as yaml_file:
             yaml.dump(template_yaml.to_yml_dict(), yaml_file)
-            spreadsheet_file = tempfile.NamedTemporaryFile('w')
-            with open("ss.xlsx", "w") as f:
-                spreadsheet_builder = VanillaSpreadsheetBuilder(f.name, True)
-                spreadsheet_builder.generate_spreadsheet(tabs_template=yaml_file.name,
-                                                         schema_urls=self.schema_template.metadata_schema_urls,
-                                                         include_schemas_tab=True)
-                spreadsheet_builder.save_spreadsheet()
+            tab_config = TabConfig().load(yaml_file.name)
+            spreadsheet_file = open(output_file_path, "w") if output_file_path is not None else tempfile.NamedTemporaryFile('w')
+
+            spreadsheet_builder = VanillaSpreadsheetBuilder(spreadsheet_file.name, True)
+            spreadsheet_builder.include_schemas_tab = True
+            spreadsheet_builder.build(SchemaTemplate(self.ingest_api.url, json_schema_docs=self.schema_template.json_schemas, tab_config=tab_config))
+            spreadsheet_builder.save_spreadsheet()
+            spreadsheet_file.close()
+
+            return spreadsheet_file.name
 
     def tab_for_type(self, type_spec: TypeSpec) -> ParsedTab:
         schema_name = type_spec.schema_name
