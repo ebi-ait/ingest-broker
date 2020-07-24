@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from typing import Dict, BinaryIO, Optional
-from multiprocessing.pool import Pool
-from multiprocessing.dummy import Pool as create_pool
 import json
 from enum import Enum
+from concurrent.futures import ThreadPoolExecutor
 
 from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec
 
@@ -38,10 +37,10 @@ class JobSpec:
 
 
 class SpreadsheetJobManager:
-    def __init__(self, spreadsheet_generator: SpreadsheetGenerator, output_dir_path: str, worker_pool: Optional[Pool]=None):
+    def __init__(self, spreadsheet_generator: SpreadsheetGenerator, output_dir_path: str, worker_pool: Optional[ThreadPoolExecutor]=None):
         self.spreadsheet_generator = spreadsheet_generator
         self.output_dir_path = output_dir_path
-        self.worker_pool = worker_pool if worker_pool is not None else create_pool(5)
+        self.worker_pool = worker_pool if worker_pool is not None else ThreadPoolExecutor(5)
 
     def create_job(self, spreadsheet_spec: SpreadsheetSpec, filename: str) -> JobSpec:
         job_id = spreadsheet_spec.hashcode()
@@ -52,7 +51,7 @@ class SpreadsheetJobManager:
         with open(job_spec_path, "w") as job_spec_file:
             json.dump(job_spec.to_dict(), job_spec_file)
 
-        #self.worker_pool.apply_async(lambda: self._do_create_spreadsheet_job(spreadsheet_spec, job_spec_path, spreadsheet_output_path))
+        self.worker_pool.submit(lambda: self._do_create_spreadsheet_job(spreadsheet_spec, job_spec_path, spreadsheet_output_path))
         self._do_create_spreadsheet_job(spreadsheet_spec, job_spec_path, spreadsheet_output_path)
 
         return job_spec
