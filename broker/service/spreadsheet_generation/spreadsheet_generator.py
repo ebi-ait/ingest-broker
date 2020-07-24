@@ -3,10 +3,10 @@ from ingest.template.schema_template import SchemaTemplate
 from ingest.template.vanilla_spreadsheet_builder import VanillaSpreadsheetBuilder
 from ingest.template.tab_config import TabConfig
 
-from broker.service.spreadsheet_generation.schema_spec.schema_spec import SchemaSpec, ParseUtils, FieldSpec, ObjectSpec, StringSpec, IntegerSpec, NumberSpec, OntologySpec, BooleanSpec
+from broker.service.spreadsheet_generation.schema_spec import SchemaSpec, ParseUtils, FieldSpec, ObjectSpec, StringSpec, IntegerSpec, NumberSpec, OntologySpec, BooleanSpec
 
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Union, BinaryIO
+from typing import List, Dict, Optional, Union
 
 from functools import reduce
 from operator import iconcat
@@ -17,8 +17,6 @@ from hashlib import md5
 from collections import OrderedDict
 import json
 from enum import Enum
-from multiprocessing.pool import Pool
-from multiprocessing.dummy import Pool as create_pool
 
 
 @dataclass
@@ -135,13 +133,8 @@ class ParsedTab:
     sub_tabs: List['ParsedTab']
 
 
-@dataclass
-class JobSpec:
-    JobStatus = Enum(["STARTED", "COMPLETE", "ERROR"])
-
-    spreadsheet_spec: SpreadsheetSpec
-    status: JobStatus
-    output_path: str
+class UnknownSchemaException(Exception):
+    pass
 
 
 class SpreadsheetGenerator:
@@ -178,7 +171,7 @@ class SpreadsheetGenerator:
 
     def tab_for_type(self, type_spec: TypeSpec) -> ParsedTab:
         schema_name = type_spec.schema_name
-        schema_properties = self.schema_template.meta_data_properties[schema_name]
+        schema_properties = self.metadata_properties_for_type(schema_name)
         schema_spec = ParseUtils.parse_schema_spec(schema_name, schema_properties)
 
         parsed_tab = self._generate_tab(self.tab_name_for_type(schema_spec), schema_spec,
@@ -226,13 +219,19 @@ class SpreadsheetGenerator:
         except (IndexError, KeyError):
             return sub_module.field_name
 
+    def metadata_properties_for_type(self, schema_name: str) -> Dict:
+        try:
+            return self.schema_template.meta_data_properties[schema_name]
+        except KeyError as e:
+            raise UnknownSchemaException(f'Unknown schema: {schema_name}')
+
     def links_for_tab(self, type_spec: TypeSpec) -> List[TabColumn]:
         link_spec = type_spec.link_spec
         if not link_spec:
             return []
         else:
-            return [self.link_column_for_schema(ParseUtils.parse_schema_spec(entity, self.schema_template.meta_data_properties[entity]))
-                     for entity in link_spec.link_entities + link_spec.link_protocols]
+            return [self.link_column_for_schema(ParseUtils.parse_schema_spec(entity, self.metadata_properties_for_type(entity)))
+                    for entity in link_spec.link_entities + link_spec.link_protocols]
 
     def link_column_for_schema(self, schema_spec: SchemaSpec) -> TabColumn:
         display_name = self.tab_name_for_type(schema_spec)
@@ -291,7 +290,7 @@ class SpreadsheetGenerator:
                                                  for field in field.fields])
 
     def process_columns(self) -> List[TabColumn]:
-        process_schema_spec = ParseUtils.parse_schema_spec("process", self.schema_template.meta_data_properties["process"])
+        process_schema_spec = ParseUtils.parse_schema_spec("process", self.metadata_properties_for_type("process"))
         return SpreadsheetGenerator.columns_for_field(process_schema_spec, ["process"])
 
     @staticmethod
@@ -334,7 +333,7 @@ class SpreadsheetGenerator:
     @staticmethod
     def template_tabs_from_parsed_tabs(parsed_tabs: List[ParsedTab]) -> List[TemplateTab]:
         all_tabs = SpreadsheetGenerator.flatten([[tab] + tab.sub_tabs for tab in parsed_tabs])
-        return [TemplateTab(t.schema_name, t.display_name, [col.path for col in t.columns])
+        return [TemplateTab(t.schema_name, SpreadsheetGenerator.chomp_32(t.display_name), [col.path for col in t.columns])
                 for t in all_tabs]
 
     @staticmethod
@@ -344,57 +343,13 @@ class SpreadsheetGenerator:
         """
         return reduce(iconcat, list_of_lists, [])
 
-
-JobStatus = Enum(["STARTED", "COMPLETE", "ERROR"])
-
-
-@dataclass
-class JobSpec:
-    status: JobStatus
-    job_id: str
-    spreadsheet_path: str
-
     @staticmethod
-    def from_dict(data: Dict) -> 'JobSpec':
-        try:
-            return JobSpec(data["status"], data["job_id"], data["spreadsheet_path"])
-        except:
-            raise
+    def chomp_32(string: str) -> str:
+        """
+        Excel spreadsheets disallow tab names with length > 32.
+        This method chomps strings greater than size 32, setting the 29th, 30th and 31st chars
+        to ellipses
 
-    def to_dict(self) -> Dict:
-        return {
-            "status": str(self.status),
-            "job_id": self.job_id,
-            "spreadsheet_path": self.spreadsheet_path
-        }
-
-
-class SpreadsheetJobManager:
-    def __init__(self, spreadsheet_generator: SpreadsheetGenerator, output_dir_path: str, worker_pool: Optional[Pool]):
-        self.spreadsheet_generator = spreadsheet_generator
-        self.output_dir_path = output_dir_path
-        self.worker_pool = worker_pool if worker_pool is not None else create_pool(5)
-
-    def create_job(self, spreadsheet_spec: SpreadsheetSpec) -> JobSpec:
-        job_id = spreadsheet_spec.hashcode()
-        spreadsheet_output_path = f'{self.output_dir_path}/{job_id}.xlsx'
-        job_spec = JobSpec(JobStatus.STARTED, job_id, spreadsheet_output_path)
-        job_spec_path = f'{self.output_dir_path}/{job_id}.json'
-
-        with open(job_spec_path, "w") as job_spec_file:
-            json.dump(job_spec.to_dict(), job_spec_file)
-
-        self.worker_pool.apply_async(lambda: self.spreadsheet_generator.generate(spreadsheet_spec, spreadsheet_output_path))
-
-        return job_spec
-
-    def status_for_job(self, job_id: str) -> JobStatus:
-        return self.load_job_spec(job_id).status
-
-    def spreadsheet_for_job(self, job_id) -> BinaryIO:
-        spreadsheet_path = self.load_job_spec(job_id).spreadsheet_path
-        return open(spreadsheet_path, "rb")
-
-    def load_job_spec(self, job_id) -> JobSpec:
-        with open(f'{self.output_dir_path}/{job_id}') as spreadsheet_job_file:
-            return JobSpec.from_dict(json.load(spreadsheet_job_file))
+        e.g given "<long string> something", returns "<long_string> som..."
+        """
+        return string if len(string) < 32 else str(string[:28]) + "..."
