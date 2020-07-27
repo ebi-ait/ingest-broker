@@ -16,7 +16,6 @@ import yaml
 from hashlib import md5
 from collections import OrderedDict
 import json
-from enum import Enum
 
 
 @dataclass

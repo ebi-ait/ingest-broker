@@ -52,7 +52,6 @@ class SpreadsheetJobManager:
             json.dump(job_spec.to_dict(), job_spec_file)
 
         self.worker_pool.submit(lambda: self._do_create_spreadsheet_job(spreadsheet_spec, job_spec_path, spreadsheet_output_path))
-        self._do_create_spreadsheet_job(spreadsheet_spec, job_spec_path, spreadsheet_output_path)
 
         return job_spec
 
