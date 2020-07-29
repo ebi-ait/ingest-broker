@@ -122,7 +122,7 @@ class SpreadsheetSpec:
 
     def hashcode(self) -> str:
         """
-        generate an md5 checksum of this spec, for purpose of spreadsheets generated from this spec
+        generate an md5 checksum of this spec, for purpose of identifying spreadsheets generated from this spec
         """
         spreadsheet_spec_dict = self.to_dict()
         sorted_keys = dict(sorted(spreadsheet_spec_dict.items()))
