@@ -67,11 +67,22 @@ class LinkSpec:
         })
 
 
+class IncludeAllModules:
+    pass
+
+
+@dataclass
+class IncludeSomeModules:
+    modules: List[str]
+
+
+IncludeModules = Union[IncludeAllModules, IncludeSomeModules]
+
+
 @dataclass
 class TypeSpec:
     schema_name: str
-    exclude_modules: List[str]
-    exclude_fields: List[str]
+    include_modules: IncludeModules
     embed_process: bool
     link_spec: Optional[LinkSpec]
 
@@ -79,15 +90,15 @@ class TypeSpec:
     def from_json_dict(data: Dict) -> 'TypeSpec':
         try:
             link_spec = LinkSpec.from_dict(data["linkSpec"]) if data.get("linkSpec") else None
-            return TypeSpec(data["schemaName"], data["excludeModules"], data["excludeFields"], data["embedProcess"], link_spec)
+            include_modules = IncludeSomeModules(data["includeModules"]) if isinstance(data["includeModules"], list) else IncludeAllModules()
+            return TypeSpec(data["schemaName"], include_modules, data["embedProcess"], link_spec)
         except (IndexError, KeyError) as e:
             raise
 
     def to_json_dict(self) -> Dict:
         return OrderedDict({
             "schemaName": self.schema_name,
-            "excludeModules": self.exclude_modules,
-            "excludeFields": self.exclude_fields,
+            "includeModules": self.include_modules.modules if isinstance(self.include_modules, IncludeSomeModules) else "ALL",
             "embedProcess": self.embed_process,
             "linkSpec": self.link_spec.to_json_dict()
         })
@@ -174,19 +185,18 @@ class SpreadsheetGenerator:
         schema_spec = ParseUtils.parse_schema_spec(schema_name, schema_properties)
 
         parsed_tab = self._generate_tab(self.tab_name_for_type(schema_spec), schema_spec,
-                                        exclude_modules=type_spec.exclude_modules,
-                                        exclude_fields=type_spec.exclude_fields,
+                                        include_modules=type_spec.include_modules,
                                         context=[schema_name])
         parsed_tab.columns.extend(self.links_for_tab(type_spec))
         parsed_tab.columns.extend(self.process_columns() if type_spec.embed_process else [])
 
         return parsed_tab
 
-    def _generate_tab(self, tab_name: str, schema_spec: SchemaSpec, exclude_modules: List[str], exclude_fields: List[str], context: List[str]) -> ParsedTab:
+    def _generate_tab(self, tab_name: str, schema_spec: SchemaSpec, include_modules: IncludeModules, context: List[str]) -> ParsedTab:
         columns: List[TabColumn] = []
         subtabs: List[ParsedTab] = []
 
-        fields = self.exclude_fields(schema_spec.fields, exclude_modules, exclude_fields)
+        fields = self.filter_fields(schema_spec.fields, include_modules)
         for field in fields:
             if self.field_is_ontology(field):
                 columns.extend(self.columns_for_ontology_module(field, context))
@@ -194,7 +204,7 @@ class SpreadsheetGenerator:
                 if field.multivalue:
                     # generate sub-tabs for this multivalue module
                     subtab_name = f'{tab_name} - {self.tab_name_for_sub_module(schema_spec, field)}'
-                    subtab = self._generate_tab(subtab_name, field, exclude_modules, exclude_fields, context=context + [field.field_name])
+                    subtab = self._generate_tab(subtab_name, field, IncludeAllModules(), context=context + [field.field_name])
                     subtabs.append(subtab)
                 else:
                     columns.extend(self.columns_for_field(field, context=context + [field.field_name]))
@@ -326,8 +336,11 @@ class SpreadsheetGenerator:
             return f'{context[0]}.{SpreadsheetGenerator.context_to_path_string(context[1:])}'
 
     @staticmethod
-    def exclude_fields(field_specs: List[FieldSpec], modules_to_exclude: List[str], fields_to_exclude: List[str]) -> List[FieldSpec]:
-        return [f for f in field_specs if f.field_name not in modules_to_exclude and f.field_name not in fields_to_exclude]
+    def filter_fields(field_specs: List[FieldSpec], modules_to_include: IncludeModules) -> List[FieldSpec]:
+        if isinstance(modules_to_include, IncludeAllModules):
+            return field_specs
+        else:
+            return [f for f in field_specs if f.field_name in modules_to_include.modules]
 
     @staticmethod
     def template_tabs_from_parsed_tabs(parsed_tabs: List[ParsedTab]) -> List[TemplateTab]:
