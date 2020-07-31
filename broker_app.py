@@ -125,7 +125,7 @@ def create_spreadsheet():
         response=jsonpickle.encode({
             "job_id": job_spec.job_id,
             "_links": {
-                "blob": {
+                "download": {
                     "href": f'/spreadsheets/download/{job_spec.job_id}'
                 }
             }
@@ -135,7 +135,7 @@ def create_spreadsheet():
     )
 
 
-@app.route('/spreadsheets/download/<job_id>', methods=['GET'])
+@app.route('/spreadsheets/blob/<job_id>', methods=['GET'])
 def get_spreadsheet(job_id: str):
     job_spec = spreadsheet_job_manager.load_job_spec(job_id)
     if job_spec.status == JobStatus.STARTED:
@@ -143,7 +143,7 @@ def get_spreadsheet(job_id: str):
             response=jsonpickle.encode({
                 "job_id": job_id,
                 "_links": {
-                    "blob": {
+                    "download": {
                         "href": f'/spreadsheets/download/{job_id}'
                     }
                 }
