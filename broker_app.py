@@ -122,20 +122,34 @@ def create_spreadsheet():
     job_spec = spreadsheet_job_manager.create_job(spreadsheet_spec, filename)
 
     return app.response_class(
-        response=jsonpickle.encode(dict(job_id=job_spec.job_id), unpicklable=False),
+        response=jsonpickle.encode({
+            "job_id": job_spec.job_id,
+            "_links": {
+                "blob": {
+                    "href": f'/spreadsheets/download/{job_spec.job_id}'
+                }
+            }
+        }, unpicklable=False),
         status=202,
-        mimetype='application/json'
+        mimetype='application/hal+json'
     )
 
 
-@app.route('/spreadsheets/<job_id>', methods=['GET'])
+@app.route('/spreadsheets/download/<job_id>', methods=['GET'])
 def get_spreadsheet(job_id: str):
     job_spec = spreadsheet_job_manager.load_job_spec(job_id)
     if job_spec.status == JobStatus.STARTED:
         return app.response_class(
-            response=jsonpickle.encode(dict(job_id=job_spec.job_id), unpicklable=False),
+            response=jsonpickle.encode({
+                "job_id": job_id,
+                "_links": {
+                    "blob": {
+                        "href": f'/spreadsheets/download/{job_id}'
+                    }
+                }
+            }, unpicklable=False),
             status=202,
-            mimetype='application/json'
+            mimetype='application/hal+json'
         )
     elif job_spec.status == JobStatus.COMPLETE:
         with spreadsheet_job_manager.spreadsheet_for_job(job_id) as spreadsheet_blob:
