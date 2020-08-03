@@ -1,6 +1,7 @@
 from unittest import TestCase, skip
-from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec, TypeSpec, LinkSpec, IncludeSomeModules, IncludeAllModules
+from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec, TypeSpec, LinkSpec, IncludeSomeModules, IncludeAllModules, TemplateTab
 from ingest.api.ingestapi import IngestApi
+import pandas as pd
 
 
 class TestSpreadsheetGenerator(TestCase):
@@ -79,7 +80,6 @@ class TestSpreadsheetGenerator(TestCase):
         self.assertTrue("Project" in [tab.display_name for tab in template_tabs])
         self.assertTrue(any("specimen_from_organism.biomaterial_core.biomaterial_id" in cols for cols in [tab.columns for tab in template_tabs]))
 
-    #@skip
     def test_generate(self):
         ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
         ingest_api = IngestApi(ingest_url)
@@ -94,12 +94,13 @@ class TestSpreadsheetGenerator(TestCase):
         output_filename = spreadsheet_generator.generate(test_spreadsheet_spec, "ss.xlsx")
         self.assertTrue("ss.xlsx" in output_filename)
 
-    def test_spreadsheet(self):
         xls = pd.ExcelFile("ss.xlsx")
         actual_tab_names = xls.sheet_names
 
-        expected_tab_names1 = ["Project", "Project - Contributors", "Project - Publications", "Project - Funding source(s)",
-        "Imaged specimen","Imaging protocol","Imaging protocol - Probe","Specimen from organism","Schemas"]
+        expected_tab_names1 = ["Project", "Project - Contributors", "Project - Publications",
+                               "Project - Funding source(s)",
+                               "Imaged specimen", "Imaging protocol", "Imaging protocol - Channel",
+                               "Imaging protocol - Probe", "Specimen from organism", "Schemas"]
 
         self.assertEqual(actual_tab_names, expected_tab_names1)
 
@@ -107,8 +108,11 @@ class TestSpreadsheetGenerator(TestCase):
         df = pd.read_excel(xls, "Project")
         self.assertEqual(df.columns[0], "PROJECT LABEL (Required)")
 
-        expected_col_names = ["project.project_core.project_short_name","project.project_core.project_title","project.project_core.project_description",
-                              "project.supplementary_links","project.insdc_project_accessions","project.geo_series_accessions","project.array_express_accessions",
-                              "project.insdc_study_accessions","project.biostudies_accessions","specimen_from_organism.biomaterial_core.biomaterial_id"]
+        expected_col_names = ["project.project_core.project_short_name", "project.project_core.project_title",
+                              "project.project_core.project_description",
+                              "project.supplementary_links", "project.insdc_project_accessions",
+                              "project.geo_series_accessions", "project.array_express_accessions",
+                              "project.insdc_study_accessions", "project.biostudies_accessions",
+                              "specimen_from_organism.biomaterial_core.biomaterial_id"]
         actual_col_names = list(df.iloc[2])
-        self.assertEqual(expected_col_names,actual_col_names)
+        self.assertEqual(expected_col_names, actual_col_names)
