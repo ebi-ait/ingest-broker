@@ -5,6 +5,7 @@ from enum import Enum
 from concurrent.futures import ThreadPoolExecutor
 
 from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec
+import logging
 
 
 class JobStatus(Enum):
@@ -42,6 +43,8 @@ class SpreadsheetJobManager:
         self.output_dir_path = output_dir_path
         self.worker_pool = worker_pool if worker_pool is not None else ThreadPoolExecutor(5)
 
+        self.logger = logging.getLogger(__name__)
+
     def create_job(self, spreadsheet_spec: SpreadsheetSpec, filename: str) -> JobSpec:
         job_id = spreadsheet_spec.hashcode()
         spreadsheet_output_path = f'{self.output_dir_path}/{job_id}.xlsx'
@@ -66,6 +69,7 @@ class SpreadsheetJobManager:
             self.spreadsheet_generator.generate(spreadsheet_spec, output_path)
             return JobStatus.COMPLETE
         except Exception as e:
+            self.logger.exception(e)
             return JobStatus.ERROR
 
     def status_for_job(self, job_id: str) -> JobStatus:

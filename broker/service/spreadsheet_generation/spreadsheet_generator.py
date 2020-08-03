@@ -100,7 +100,7 @@ class TypeSpec:
             "schemaName": self.schema_name,
             "includeModules": self.include_modules.modules if isinstance(self.include_modules, IncludeSomeModules) else "ALL",
             "embedProcess": self.embed_process,
-            "linkSpec": self.link_spec.to_json_dict()
+            "linkSpec": self.link_spec.to_json_dict() if self.link_spec is not None else None
         })
 
 

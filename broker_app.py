@@ -114,6 +114,7 @@ def submission_summary(submission_uuid):
     )
 
 
+@cross_origin()
 @app.route('/spreadsheets', methods=['POST'])
 def create_spreadsheet():
     request_json = json.loads(request.data)
@@ -135,7 +136,8 @@ def create_spreadsheet():
     )
 
 
-@app.route('/spreadsheets/blob/<job_id>', methods=['GET'])
+@cross_origin()
+@app.route('/spreadsheets/download/<job_id>', methods=['GET'])
 def get_spreadsheet(job_id: str):
     job_spec = spreadsheet_job_manager.load_job_spec(job_id)
     if job_spec.status == JobStatus.STARTED:

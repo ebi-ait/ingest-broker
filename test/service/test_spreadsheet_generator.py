@@ -66,4 +66,5 @@ class TestSpreadsheetGenerator(TestCase):
              TypeSpec("imaging_protocol", IncludeAllModules(), False, None),
              TypeSpec("specimen_from_organism", IncludeAllModules(), True, LinkSpec(["donor_organism"], []))])
 
-        test_spreadsheet = spreadsheet_generator.generate(test_spreadsheet_spec, "ss.xlsx")
+        output_filename = spreadsheet_generator.generate(test_spreadsheet_spec, "ss.xlsx")
+        self.assertTrue("ss.xlsx" in output_filename)
