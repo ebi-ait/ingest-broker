@@ -54,6 +54,31 @@ class TestSpreadsheetGenerator(TestCase):
 
         self.assertEqual(spreadsheet_spec.hashcode(), SpreadsheetSpec.from_dict(spreadsheet_spec_dict).hashcode())
 
+    def test_template_tabs_from_parsed_tabs(self):
+        test_type_spec_1 = TypeSpec("project", IncludeAllModules(), False, LinkSpec([], []))
+        test_type_spec_2 = TypeSpec("imaged_specimen", IncludeAllModules(), True, LinkSpec([], ["imaging_protocol"]))
+        test_type_spec_3 = TypeSpec("imaging_protocol", IncludeAllModules(), False, None)
+        test_type_spec_4 = TypeSpec("specimen_from_organism", IncludeAllModules(), True, LinkSpec(["donor_organism"], []))
+
+        types = [test_type_spec_1,test_type_spec_2,test_type_spec_3,test_type_spec_4]
+
+        ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
+        ingest_api = IngestApi(ingest_url)
+
+        parsed_tabs = []
+        for type_spec in types:
+            tab_for_type = SpreadsheetGenerator(ingest_api).tab_for_type(type_spec)
+            parsed_tabs.append(tab_for_type)
+
+        all_tabs = SpreadsheetGenerator.flatten([[tab] + tab.sub_tabs for tab in parsed_tabs])
+        template_tabs = [TemplateTab(t.schema_name, SpreadsheetGenerator.chomp_32(t.display_name),
+                                     [col.path for col in t.columns]) for t in all_tabs]
+
+        self.assertTrue("project" in [tab.schema_name for tab in template_tabs])
+        self.assertTrue("contributors" in [tab.schema_name for tab in template_tabs])
+        self.assertTrue("Project" in [tab.display_name for tab in template_tabs])
+        self.assertTrue(any("specimen_from_organism.biomaterial_core.biomaterial_id" in cols for cols in [tab.columns for tab in template_tabs]))
+
     #@skip
     def test_generate(self):
         ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
@@ -68,3 +93,22 @@ class TestSpreadsheetGenerator(TestCase):
 
         output_filename = spreadsheet_generator.generate(test_spreadsheet_spec, "ss.xlsx")
         self.assertTrue("ss.xlsx" in output_filename)
+
+    def test_spreadsheet(self):
+        xls = pd.ExcelFile("ss.xlsx")
+        actual_tab_names = xls.sheet_names
+
+        expected_tab_names1 = ["Project", "Project - Contributors", "Project - Publications", "Project - Funding source(s)",
+        "Imaged specimen","Imaging protocol","Imaging protocol - Probe","Specimen from organism","Schemas"]
+
+        self.assertEqual(actual_tab_names, expected_tab_names1)
+
+        xls = pd.ExcelFile("ss.xlsx")
+        df = pd.read_excel(xls, "Project")
+        self.assertEqual(df.columns[0], "PROJECT LABEL (Required)")
+
+        expected_col_names = ["project.project_core.project_short_name","project.project_core.project_title","project.project_core.project_description",
+                              "project.supplementary_links","project.insdc_project_accessions","project.geo_series_accessions","project.array_express_accessions",
+                              "project.insdc_study_accessions","project.biostudies_accessions","specimen_from_organism.biomaterial_core.biomaterial_id"]
+        actual_col_names = list(df.iloc[2])
+        self.assertEqual(expected_col_names,actual_col_names)
