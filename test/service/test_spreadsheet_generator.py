@@ -1,9 +1,8 @@
 from unittest import TestCase, skip
-from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec, TypeSpec, LinkSpec, ObjectSpec, IncludeSomeModules, IncludeAllModules, TemplateTab, ParseUtils
+from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec, TypeSpec, LinkSpec, IncludeSomeModules, IncludeAllModules, TemplateTab
 from ingest.api.ingestapi import IngestApi
 
 import pandas as pd
-
 
 class TestSpreadsheetGenerator(TestCase):
 
@@ -77,43 +76,12 @@ class TestSpreadsheetGenerator(TestCase):
         template_tabs = [TemplateTab(t.schema_name, SpreadsheetGenerator.chomp_32(t.display_name),
                                      [col.path for col in t.columns]) for t in all_tabs]
 
-        #self.assertTrue("collection_protocol" in [tab.schema_name for tab in template_tabs])
-        #self.assertTrue("Collection protocol" in [tab.display_name for tab in template_tabs])
-        #self.assertTrue(len([tab.display_name for tab in template_tabs]) == 1)
+        self.assertTrue("collection_protocol" in [tab.schema_name for tab in template_tabs])
+        self.assertTrue("Collection protocol" in [tab.display_name for tab in template_tabs])
         self.assertTrue("project" in [tab.schema_name for tab in template_tabs])
         self.assertTrue("contributors" in [tab.schema_name for tab in template_tabs])
         self.assertTrue("Project" in [tab.display_name for tab in template_tabs])
         self.assertTrue(any("specimen_from_organism.biomaterial_core.biomaterial_id" in cols for cols in [tab.columns for tab in template_tabs]))
-
-    def test_temp(self):
-        ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
-        ingest_api = IngestApi(ingest_url)
-        spreadsheet_generator = SpreadsheetGenerator(ingest_api)
-        schema_name = "collection_protocol"
-        schema_properties = spreadsheet_generator.metadata_properties_for_type(schema_name)
-        field_name = schema_name
-        data = schema_properties
-        items = data.items()
-        sub_fields = dict(filter(lambda entry: isinstance(entry[1], dict) and "value_type" in entry[1], data.items()))
-        field_specs = [ParseUtils.parse_field(entry[0], entry[1]) for entry in sub_fields.items()]
-        schema_spec = ObjectSpec(field_name, data["multivalue"], data["description"], data["required"],
-                          data["identifiable"],
-                          data["external_reference"], data["schema"]["high_level_entity"],
-                          data["schema"]["domain_entity"], data["schema"]["module"], data["schema"]["version"],
-                          data["schema"]["url"], field_specs) # field_specs = list of Objects (e.g. sub_fields['protocol_core'], sub_fields['method'], sub_fields['reagents'] for collection_protocol)
-
-        #parsed_tab = spreadsheet_generator._generate_tab(spreadsheet_generator.tab_name_for_type(schema_spec), schema_spec,
-                                        #include_modules=type_spec.include_modules,
-                                        #context=[schema_name])
-        #parsed_tab.columns.extend(self.links_for_tab(type_spec))
-        #parsed_tab.columns.extend(self.process_columns() if type_spec.embed_process else [])
-
-        self.assertTrue(schema_properties)
-        #parsed_tab = self._generate_tab(self.tab_name_for_type(schema_spec), schema_spec,
-                                        #include_modules=type_spec.include_modules,
-                                        #context=[schema_name])
-        #parsed_tab.columns.extend(self.links_for_tab(type_spec))
-        #parsed_tab.columns.extend(self.process_columns() if type_spec.embed_process else [])
 
     def test_generate(self):
         ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
@@ -132,21 +100,21 @@ class TestSpreadsheetGenerator(TestCase):
              TypeSpec("differentiation_protocol", IncludeAllModules(), False,LinkSpec(["specimen_from_organism"], [])),
              TypeSpec("sequence_file", IncludeAllModules(), False, LinkSpec(["cell_suspension"], []))])
 
-        output_filename = spreadsheet_generator.generate(test_spreadsheet_spec, "ss4.xlsx")
-        self.assertTrue("ss4.xlsx" in output_filename)
+        output_filename = spreadsheet_generator.generate(test_spreadsheet_spec, "ss1.xlsx")
+        self.assertTrue("ss1.xlsx" in output_filename)
 
-        xls = pd.ExcelFile("ss4.xlsx")
+        xls = pd.ExcelFile("ss1.xlsx")
         actual_tab_names = xls.sheet_names
 
         expected_tab_names1 = ["Project", "Project - Contributors", "Project - Publications",
                                "Project - Funding source(s)",
                                "Imaged specimen", "Imaging protocol", "Imaging protocol - Channel",
                                "Imaging protocol - Probe", "Specimen from organism", "Collection protocol", "Dissociation protocol",
-                               "Aggregate generation protocol", "iPSC induction protocol", "Differentiation protocol", "Sequence file", "Schemas"]
+                               "Aggregate generation protocol", "Ipsc induction protocol", "Differentiation protocol", "Sequence file", "Schemas"]
 
         self.assertEqual(actual_tab_names, expected_tab_names1)
 
-        xls = pd.ExcelFile("ss4.xlsx")
+        xls = pd.ExcelFile("ss1.xlsx")
         df = pd.read_excel(xls, "Project")
         self.assertEqual(df.columns[0], "PROJECT LABEL (Required)")
 
