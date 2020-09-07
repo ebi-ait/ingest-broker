@@ -108,3 +108,4 @@ venv.bak/
 
 # directory for anything specific only to environment
 _local/
+venv*/
