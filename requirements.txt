@@ -19,3 +19,4 @@ PyYAML~=5.1
 mock~=3.0.5
 dataclasses~=0.6
 argparse~=1.4.0
+#trigger
