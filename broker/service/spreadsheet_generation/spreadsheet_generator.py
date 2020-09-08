@@ -202,10 +202,14 @@ class SpreadsheetGenerator:
                 columns.extend(self.columns_for_ontology_module(field, context))
             elif self.field_is_object(field):
                 if field.multivalue:
-                    # generate sub-tabs for this multivalue module
-                    subtab_name = f'{tab_name} - {self.tab_name_for_sub_module(schema_spec, field)}'
-                    subtab = self._generate_tab(subtab_name, field, IncludeAllModules(), context=context + [field.field_name])
-                    subtabs.append(subtab)
+                    if field.field_name == 'reagents':
+                        columns.extend(self.columns_for_field(field, context=context + [field.field_name]))
+                    else:
+                        # generate sub-tabs for this multivalue module
+                        subtab_name = f'{tab_name} - {self.tab_name_for_sub_module(schema_spec, field)}'
+                        subtab = self._generate_tab(subtab_name, field, IncludeAllModules(),
+                                                    context=context + [field.field_name])
+                        subtabs.append(subtab)
                 else:
                     columns.extend(self.columns_for_field(field, context=context + [field.field_name]))
             elif self.field_is_atomic(field):
