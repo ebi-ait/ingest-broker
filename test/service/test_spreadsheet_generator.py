@@ -1,16 +1,15 @@
-import tempfile
-from unittest import TestCase
-
-import pandas as pd
-import yaml
+from unittest import TestCase, skip
+from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec, TypeSpec, LinkSpec, IncludeSomeModules, IncludeAllModules, TemplateTab, TemplateYaml
 from ingest.api.ingestapi import IngestApi
 from ingest.template.schema_template import SchemaTemplate
-from ingest.template.tab_config import TabConfig
+
 from ingest.template.vanilla_spreadsheet_builder import VanillaSpreadsheetBuilder
+from ingest.template.tab_config import TabConfig
 
-from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec, \
-    TypeSpec, LinkSpec, IncludeSomeModules, IncludeAllModules, TemplateTab, TemplateYaml
+import pandas as pd
 
+import tempfile
+import yaml
 
 class TestSpreadsheetGenerator(TestCase):
 
@@ -97,16 +96,27 @@ class TestSpreadsheetGenerator(TestCase):
         spreadsheet_generator = SpreadsheetGenerator(ingest_api)
 
         test_spreadsheet_spec = SpreadsheetSpec(
-            [TypeSpec("project", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"], [])),
-            TypeSpec("imaged_specimen", IncludeAllModules(), True, None),
+            [TypeSpec("project", IncludeAllModules(), False, None),
+             TypeSpec("donor_organism", IncludeAllModules(), False, None),
+             TypeSpec("collection_protocol", IncludeAllModules(), False, None),
+             TypeSpec("specimen_from_organism", IncludeAllModules(), False, LinkSpec(["donor_organism"], ["collection_protocol"])),
+             TypeSpec("organoid", IncludeAllModules(), False, LinkSpec(["donor_organism"], [])),
+             TypeSpec("cell_line", IncludeAllModules(), False, LinkSpec(["donor_organism"], [])),
+             TypeSpec("imaged_specimen", IncludeAllModules(), True, LinkSpec(["donor_organism"], [])),
+             TypeSpec("dissociation_protocol", IncludeAllModules(), False, None),
+             TypeSpec("aggregate_generation_protocol", IncludeAllModules(), False, None),
+             TypeSpec("differentiation_protocol", IncludeAllModules(), False, None),
+             TypeSpec("ipsc_induction_protocol", IncludeAllModules(), False, None),
+             TypeSpec("cell_suspension", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"], [])),
              TypeSpec("imaging_protocol", IncludeAllModules(), False, None),
-             TypeSpec("specimen_from_organism", IncludeAllModules(), False, LinkSpec(["donor_organism"], [])),
-             TypeSpec("collection_protocol", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"], [])),
-             TypeSpec("dissociation_protocol", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"], [])),
-             TypeSpec("aggregate_generation_protocol", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"], [])),
-             TypeSpec("ipsc_induction_protocol", IncludeAllModules(), False,LinkSpec(["specimen_from_organism"], [])),
-             TypeSpec("differentiation_protocol", IncludeAllModules(), False,LinkSpec(["specimen_from_organism"], [])),
-             TypeSpec("sequence_file", IncludeAllModules(), False, LinkSpec(["cell_suspension"], []))])
+             TypeSpec("imaging_preparation_protocol", IncludeAllModules(), False, None),
+             TypeSpec("image_file", IncludeAllModules(), False, LinkSpec(["imaged_specimen"], [])),
+             TypeSpec("library_preparation_protocol", IncludeAllModules(), False, None),
+             TypeSpec("sequencing_protocol", IncludeAllModules(), False, None),
+             TypeSpec("supplementary_file", IncludeAllModules(), False, None),
+             TypeSpec("sequence_file", IncludeAllModules(), False, LinkSpec(["cell_suspension"], ["library_preparation_protocol"]))])
+
+        name_error = None
 
         parsed_tabs = []
         for type_spec in test_spreadsheet_spec.types:
@@ -128,20 +138,19 @@ class TestSpreadsheetGenerator(TestCase):
                                              tab_config=tab_config)
             tabs = schema_template.spreadsheet_configuration.lookup("tabs")
 
-            names = []
             for tab in tabs:
                 for tab_name, detail in tab.items():
 
                     worksheet = spreadsheet_builder.spreadsheet.add_worksheet(detail["display_name"])
 
                     for column_index, column_name in enumerate(detail["columns"]):
-                        #formatted_column_name = spreadsheet_builder.get_user_friendly_column_name(schema_template,
-                        #                                                            column_name,
-                        #                                                            tab_name).upper()
                         formatted_column_name = spreadsheet_builder.get_user_friendly_column_name(schema_template,
                                                                                     column_name,
                                                                                     tab_name).upper()
-                        names.append(formatted_column_name)
+                        if "USER_FRIENDLY" in formatted_column_name:
+                            name_error = True
+
+        self.assertFalse(name_error)
 
     def test_generate(self):
         ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
@@ -149,40 +158,61 @@ class TestSpreadsheetGenerator(TestCase):
         spreadsheet_generator = SpreadsheetGenerator(ingest_api)
 
         test_spreadsheet_spec = SpreadsheetSpec(
-            [TypeSpec("project", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"], [])),
-             TypeSpec("imaged_specimen", IncludeAllModules(), True, None),
+            [TypeSpec("project", IncludeAllModules(), False, None),
+             TypeSpec("donor_organism", IncludeAllModules(), False, None),
+             TypeSpec("collection_protocol", IncludeAllModules(), False, None),
+             TypeSpec("specimen_from_organism", IncludeAllModules(), False, LinkSpec(["donor_organism"], ["collection_protocol"])),
+             TypeSpec("organoid", IncludeAllModules(), False, LinkSpec(["donor_organism"], [])),
+             TypeSpec("cell_line", IncludeAllModules(), False, LinkSpec(["donor_organism"], [])),
+             TypeSpec("imaged_specimen", IncludeAllModules(), True, LinkSpec(["donor_organism"], [])),
+             TypeSpec("dissociation_protocol", IncludeAllModules(), False, None),
+             TypeSpec("aggregate_generation_protocol", IncludeAllModules(), False, None),
+             TypeSpec("differentiation_protocol", IncludeAllModules(), False, None),
+             TypeSpec("ipsc_induction_protocol", IncludeAllModules(), False, None),
+             TypeSpec("cell_suspension", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"], ["dissociation_protocol"])),
              TypeSpec("imaging_protocol", IncludeAllModules(), False, None),
-             TypeSpec("specimen_from_organism", IncludeAllModules(), False, LinkSpec(["donor_organism"], [])),
-             TypeSpec("collection_protocol", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"], [])),
-             TypeSpec("dissociation_protocol", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"], [])),
-             TypeSpec("aggregate_generation_protocol", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"], [])),
-             TypeSpec("ipsc_induction_protocol", IncludeAllModules(), False,LinkSpec(["specimen_from_organism"], [])),
-             TypeSpec("differentiation_protocol", IncludeAllModules(), False,LinkSpec(["specimen_from_organism"], [])),
-             TypeSpec("sequence_file", IncludeAllModules(), False, LinkSpec(["cell_suspension"], []))])
+             TypeSpec("imaging_preparation_protocol", IncludeAllModules(), False, None),
+             TypeSpec("image_file", IncludeAllModules(), False, LinkSpec(["imaged_specimen"], [])),
+             TypeSpec("library_preparation_protocol", IncludeAllModules(), False, None),
+             TypeSpec("sequencing_protocol", IncludeAllModules(), False, None),
+             TypeSpec("supplementary_file", IncludeAllModules(), False, None),
+             TypeSpec("sequence_file", IncludeAllModules(), False, LinkSpec(["cell_suspension"], ["library_preparation_protocol"]))])
 
+        # check the spreadsheet exists
         output_filename = spreadsheet_generator.generate(test_spreadsheet_spec, "ss1.xlsx")
         self.assertTrue("ss1.xlsx" in output_filename)
 
+        # check the actual tab names equal the expected tab names
         xls = pd.ExcelFile("ss1.xlsx")
         actual_tab_names = xls.sheet_names
 
-        expected_tab_names1 = ["Project", "Project - Contributors", "Project - Publications",
-                               "Project - Funding source(s)",
-                               "Imaged specimen", "Imaging protocol", "Imaging protocol - Channel",
-                               "Imaging protocol - Probe", "Specimen from organism", "Collection protocol", "Dissociation protocol",
-                               "Aggregate generation protocol", "Ipsc induction protocol", "Differentiation protocol", "Sequence file", "Schemas"]
+        # This test does not pass currently: Familial relationship tab displays as separate tab when "donor_organism" is specified
+        # as a TyoeSpec: "Donor organism - Familial re...". A ticket has been created.
+
+        # Note: "Project - Funding source(s)" is technically wrong, because the 'user friendly' name needs to be updated in the schema
+        # from "Funding source(s)" to "Funders" here: https://schema.dev.archive.data.humancellatlas.org/type/project/14.1.0/project
+
+        expected_tab_names1 = ["Project", "Project - Contributors", "Project - Publications", "Project - Funding source(s)",
+                               "Donor organism", "Collection protocol", "Specimen from organism", "Organoid", "Cell line",
+                               "Imaged specimen","Dissociation protocol", "Aggregate generation protocol", "Differentiation protocol", "Ipsc induction protocol",
+                               "Cell suspension", "Imaging protocol", "Imaging protocol - Channel","Imaging protocol - Probe", "Imaging preparation protocol",
+                               "Image file", "Library preparation protocol", "Sequencing protocol", "Supplementary file", "Sequence file", "Schemas"]
 
         self.assertEqual(actual_tab_names, expected_tab_names1)
 
+        # check the row headers are present and correct.
+        # note: it is difficult to extend this test to multiple tabs (too many expected row headers to list here). Any ideas/thoughts about how to extend it welcome.
         xls = pd.ExcelFile("ss1.xlsx")
         df = pd.read_excel(xls, "Project")
         self.assertEqual(df.columns[0], "PROJECT LABEL (Required)")
+        self.assertEqual(df.iloc[0,0], "A short name for the project.")
+        self.assertEqual(df.iloc[2,0], "project.project_core.project_short_name")
 
+        # note: it is difficult to extend this test to multiple tabs (too many expected column names to list here). Any ideas/thoughts about how to extend it welcome.
         expected_col_names = ["project.project_core.project_short_name", "project.project_core.project_title",
                               "project.project_core.project_description",
                               "project.supplementary_links", "project.insdc_project_accessions",
                               "project.geo_series_accessions", "project.array_express_accessions",
-                              "project.insdc_study_accessions", "project.biostudies_accessions",
-                              "specimen_from_organism.biomaterial_core.biomaterial_id"]
+                              "project.insdc_study_accessions", "project.biostudies_accessions"]
         actual_col_names = list(df.iloc[2])
         self.assertEqual(expected_col_names, actual_col_names)

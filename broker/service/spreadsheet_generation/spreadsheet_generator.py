@@ -263,7 +263,7 @@ class SpreadsheetGenerator:
             return TabColumn(name=f'{display_name} - ID',
                              description="A protocol ID",
                              example="ABC12345",
-                             path=f'{schema_spec.field_name}.protocol.protocol_id')
+                             path=f'{schema_spec.field_name}.protocol_core.protocol_id')
         elif schema_spec.domain_entity == "process":
             return TabColumn(name=f'{display_name} - ID',
                              description="A process ID",
