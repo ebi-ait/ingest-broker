@@ -161,22 +161,31 @@ class TestSpreadsheetGenerator(TestCase):
             [TypeSpec("project", IncludeAllModules(), False, None),
              TypeSpec("donor_organism", IncludeAllModules(), False, None),
              TypeSpec("collection_protocol", IncludeAllModules(), False, None),
-             TypeSpec("specimen_from_organism", IncludeAllModules(), False, LinkSpec(["donor_organism"], ["collection_protocol"])),
-             TypeSpec("organoid", IncludeAllModules(), False, LinkSpec(["donor_organism"], [])),
-             TypeSpec("cell_line", IncludeAllModules(), False, LinkSpec(["donor_organism"], [])),
-             TypeSpec("imaged_specimen", IncludeAllModules(), True, LinkSpec(["donor_organism"], [])),
+             TypeSpec("specimen_from_organism", IncludeAllModules(), False, LinkSpec(["donor_organism"],
+                                                                                     ["collection_protocol"])),
+             TypeSpec("organoid", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"],
+                                                                       ["aggregate_generation_protocol"])),
+             TypeSpec("cell_line", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"],
+                                                                        ["ipsc_induction_protocol",
+                                                                         "differentiation_protocol"])),
+             TypeSpec("imaged_specimen", IncludeAllModules(), True, LinkSpec(["donor_organism"],
+                                                                             ["imaging_preparation_protocol"])),
              TypeSpec("dissociation_protocol", IncludeAllModules(), False, None),
              TypeSpec("aggregate_generation_protocol", IncludeAllModules(), False, None),
              TypeSpec("differentiation_protocol", IncludeAllModules(), False, None),
              TypeSpec("ipsc_induction_protocol", IncludeAllModules(), False, None),
-             TypeSpec("cell_suspension", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"], ["dissociation_protocol"])),
+             TypeSpec("cell_suspension", IncludeAllModules(), False, LinkSpec(["specimen_from_organism"],
+                                                                              ["dissociation_protocol",
+                                                                               "enrichment_protocol"])),
              TypeSpec("imaging_protocol", IncludeAllModules(), False, None),
              TypeSpec("imaging_preparation_protocol", IncludeAllModules(), False, None),
-             TypeSpec("image_file", IncludeAllModules(), False, LinkSpec(["imaged_specimen"], [])),
+             TypeSpec("image_file", IncludeAllModules(), False, LinkSpec(["imaged_specimen"], ["imaging_protocol"])),
              TypeSpec("library_preparation_protocol", IncludeAllModules(), False, None),
              TypeSpec("sequencing_protocol", IncludeAllModules(), False, None),
              TypeSpec("supplementary_file", IncludeAllModules(), False, None),
-             TypeSpec("sequence_file", IncludeAllModules(), False, LinkSpec(["cell_suspension"], ["library_preparation_protocol"]))])
+             TypeSpec("sequence_file", IncludeAllModules(), False, LinkSpec(["cell_suspension"],
+                                                                            ["library_preparation_protocol",
+                                                                             "sequencing_protocol"]))])
 
         # check the spreadsheet exists
         output_filename = spreadsheet_generator.generate(test_spreadsheet_spec, "ss1.xlsx")
@@ -186,17 +195,16 @@ class TestSpreadsheetGenerator(TestCase):
         xls = pd.ExcelFile("ss1.xlsx")
         actual_tab_names = xls.sheet_names
 
-        # This test does not pass currently: Familial relationship tab displays as separate tab when "donor_organism" is specified
-        # as a TyoeSpec: "Donor organism - Familial re...". A ticket has been created.
-
         # Note: "Project - Funding source(s)" is technically wrong, because the 'user friendly' name needs to be updated in the schema
         # from "Funding source(s)" to "Funders" here: https://schema.dev.archive.data.humancellatlas.org/type/project/14.1.0/project
 
         expected_tab_names1 = ["Project", "Project - Contributors", "Project - Publications", "Project - Funding source(s)",
-                               "Donor organism", "Donor organism - Familial re...", "Collection protocol", "Specimen from organism", "Organoid", "Cell line",
-                               "Imaged specimen","Dissociation protocol", "Aggregate generation protocol", "Differentiation protocol", "Ipsc induction protocol",
-                               "Cell suspension", "Imaging protocol", "Imaging protocol - Channel","Imaging protocol - Probe", "Imaging preparation protocol",
-                               "Image file", "Library preparation protocol", "Sequencing protocol", "Supplementary file", "Sequence file", "Schemas"]
+                               "Donor organism", "Collection protocol", "Specimen from organism", "Organoid", "Cell line",
+                               "Imaged specimen", "Dissociation protocol", "Aggregate generation protocol",
+                               "Differentiation protocol", "Ipsc induction protocol", "Cell suspension",
+                               "Imaging protocol", "Imaging protocol - Channel","Imaging protocol - Probe",
+                               "Imaging preparation protocol", "Image file", "Library preparation protocol",
+                               "Sequencing protocol", "Supplementary file", "Sequence file", "Schemas"]
 
         self.assertEqual(actual_tab_names, expected_tab_names1)
 
