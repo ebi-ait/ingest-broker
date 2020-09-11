@@ -137,9 +137,8 @@ class TestSpreadsheetGenerator(TestCase):
         with tempfile.NamedTemporaryFile('w') as yaml_file:
             yaml.dump(yml.to_yml_dict(), yaml_file)
             tab_config = TabConfig().load(yaml_file.name)
-            spreadsheet_file = open("ss1.xlsx", "w")
 
-            spreadsheet_builder = VanillaSpreadsheetBuilder(spreadsheet_file.name, True)
+            spreadsheet_builder = VanillaSpreadsheetBuilder("ss1.xlsx", True)
             spreadsheet_builder.include_schemas_tab = True
             schema_template = SchemaTemplate(spreadsheet_generator.ingest_api.url,
                                              json_schema_docs=spreadsheet_generator.schema_template.json_schemas,
