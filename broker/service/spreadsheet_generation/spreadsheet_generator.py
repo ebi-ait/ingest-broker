@@ -55,10 +55,9 @@ class LinkSpec:
 
     @staticmethod
     def from_dict(data: Dict) -> 'LinkSpec':
-        try:
-            return LinkSpec(data["linkEntities"], data["linkProtocols"])
-        except (IndexError, KeyError) as e:
-            raise
+        link_entities = data.get("linkEntities", [])
+        link_protocols = data.get("linkProtocols", [])
+        return LinkSpec(link_entities, link_protocols)
 
     def to_json_dict(self) -> Dict:
         return OrderedDict({
