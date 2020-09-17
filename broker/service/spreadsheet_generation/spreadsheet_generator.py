@@ -5,7 +5,7 @@ from ingest.template.tab_config import TabConfig
 
 from broker.service.spreadsheet_generation.schema_spec import SchemaSpec, ParseUtils, FieldSpec, ObjectSpec, StringSpec, IntegerSpec, NumberSpec, OntologySpec, BooleanSpec
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Union
 
 from functools import reduce
@@ -50,8 +50,8 @@ class TemplateYaml:
 
 @dataclass
 class LinkSpec:
-    link_entities: List[str]
-    link_protocols: List[str]
+    link_entities: List[str] = field(default_factory=list)
+    link_protocols: List[str] = field(default_factory=list)
 
     @staticmethod
     def from_dict(data: Dict) -> 'LinkSpec':
@@ -80,10 +80,10 @@ IncludeModules = Union[IncludeAllModules, IncludeSomeModules]
 
 @dataclass
 class TypeSpec:
-    schema_name: str
-    include_modules: IncludeModules
-    embed_process: bool
-    link_spec: Optional[LinkSpec]
+    schema_name: str = ''
+    embed_process: bool = False
+    include_modules: IncludeModules = field(default_factory=list)
+    link_spec: Optional[LinkSpec] = LinkSpec()
 
     @staticmethod
     def from_json_dict(data: Dict) -> 'TypeSpec':
