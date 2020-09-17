@@ -26,7 +26,7 @@ def sort(specs: List[TypeSpec]):
                     adjacency[link_entity] = Data(None, set())
                 adjacency[link_entity].back_links.add(spec.schema_name)
 
-    if len(stack) > 0:   # valid topology (i.e. no cycles)
+    if len(stack) > 0:
         specs.clear()
     while len(stack) > 0:
         next_spec = stack.pop()

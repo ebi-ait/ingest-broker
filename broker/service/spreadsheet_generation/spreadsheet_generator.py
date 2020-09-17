@@ -1,8 +1,11 @@
+from copy import copy
+
 from ingest.api.ingestapi import IngestApi
 from ingest.template.schema_template import SchemaTemplate
 from ingest.template.vanilla_spreadsheet_builder import VanillaSpreadsheetBuilder
 from ingest.template.tab_config import TabConfig
 
+from broker.service.spreadsheet_generation import type_spec_utils
 from broker.service.spreadsheet_generation.schema_spec import SchemaSpec, ParseUtils, FieldSpec, ObjectSpec, StringSpec, IntegerSpec, NumberSpec, OntologySpec, BooleanSpec
 
 from dataclasses import dataclass, field
@@ -154,7 +157,9 @@ class SpreadsheetGenerator:
 
     def generate(self, spreadsheet_spec: SpreadsheetSpec, output_file_path: Optional[str]) -> str:
         parsed_tabs = []
-        for type_spec in spreadsheet_spec.types:
+        type_specs = copy(spreadsheet_spec.types)
+        type_spec_utils.sort(type_specs)
+        for type_spec in type_specs:
             tab_for_type = self.tab_for_type(type_spec)
             parsed_tabs.append(tab_for_type)
 
