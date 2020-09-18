@@ -27,9 +27,10 @@ def sort(specs):
         specs.clear()
     while len(stack) > 0:
         next_spec = stack.pop()
-        specs.append(next_spec)
-        data = adjacency[next_spec.schema_name]
-        undiscovered_links = [link for link in data.back_links if link in adjacency.keys()]
-        for entity_link in undiscovered_links:
-            stack.append(adjacency[entity_link].spec)
-        del adjacency[next_spec.schema_name]  # visited
+        if next_spec.schema_name in adjacency.keys():
+            specs.append(next_spec)
+            data = adjacency[next_spec.schema_name]
+            undiscovered_links = [link for link in data.back_links if link in adjacency.keys()]
+            for entity_link in undiscovered_links:
+                stack.append(adjacency[entity_link].spec)
+            del adjacency[next_spec.schema_name]  # visited
