@@ -119,7 +119,7 @@ class SpreadsheetSpec:
 
     def to_dict(self) -> Dict:
         return OrderedDict({
-            "types": [TypeSpec.to_json_dict(t_spec) for t_spec in self.types]
+            "types": [t_spec.to_json_dict() for t_spec in self.types]
         })
 
     def hashcode(self) -> str:
