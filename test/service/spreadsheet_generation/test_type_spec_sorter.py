@@ -13,10 +13,9 @@ class TypeSpecSorterTest(TestCase):
 
     def test_no_links_first(self):
         # given:
-        child_1 = TypeSpec(schema_name='child_1')
-        child_2 = TypeSpec(schema_name='child_2')
-        parent = TypeSpec(schema_name='parent',
-                          link_spec=LinkSpec(link_entities=['child_1', 'child_2']))
+        child_1 = _type_spec('child_1')
+        child_2 = _type_spec('child_2')
+        parent = _type_spec('parent', ['child_1', 'child_2'])
 
         # when:
         spec = [parent, child_1, child_2]
