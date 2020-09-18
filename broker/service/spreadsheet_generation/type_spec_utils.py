@@ -1,13 +1,9 @@
 from collections import namedtuple
-from typing import List
-
-from broker.service.spreadsheet_generation.spreadsheet_generator import TypeSpec
-
 
 Data = namedtuple('Data', ['spec', 'back_links'])
 
 
-def sort(specs: List[TypeSpec]):
+def sort(specs):
     adjacency = {}
     stack = []
     for spec in specs:
