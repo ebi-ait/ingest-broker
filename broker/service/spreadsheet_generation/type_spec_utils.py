@@ -7,8 +7,7 @@ def sort(specs):
     adjacency = _construct_graph(specs)
     roots = [spec for spec in specs if spec.link_spec is not None and len(spec.link_spec.link_entities) == 0]
 
-    if len(roots) > 0:
-        specs.clear()
+    specs.clear()
     deque = []
     for root in roots:
         deque.append(root)
@@ -21,6 +20,9 @@ def sort(specs):
                 for entity_link in undiscovered_links:
                     deque.append(adjacency[entity_link].spec)
                 del adjacency[next_spec.schema_name]  # visited
+
+    for _, data in adjacency.items():
+        specs.append(data.spec)
 
 
 def _construct_graph(specs) -> dict:
