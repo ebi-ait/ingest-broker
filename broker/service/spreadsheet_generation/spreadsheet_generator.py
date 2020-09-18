@@ -84,8 +84,8 @@ IncludeModules = Union[IncludeAllModules, IncludeSomeModules]
 @dataclass
 class TypeSpec:
     schema_name: str = ''
-    embed_process: bool = False
     include_modules: IncludeModules = field(default_factory=list)
+    embed_process: bool = False
     link_spec: Optional[LinkSpec] = LinkSpec()
 
     @staticmethod
