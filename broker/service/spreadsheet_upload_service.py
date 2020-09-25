@@ -29,15 +29,15 @@ class SpreadsheetUploadService:
         path = self.storage_service.store(submission_uuid, filename, request_file.read())
 
         thread = threading.Thread(target=self._upload,
-                                  args=(submission_resource, path, project_uuid))
+                                  args=(submission_resource, path, is_update, project_uuid))
         thread.start()
         return submission_resource
 
-    def _upload(self, submission_resource, path, project_uuid=None):
+    def _upload(self, submission_resource, path, is_update, project_uuid=None):
         _LOGGER.info('Spreadsheet started!')
         submission_url = submission_resource["_links"]["self"]["href"].rsplit("{")[0]
-        submission, template_manager = self.importer.import_file(path, submission_url, project_uuid)
-        XlsImporter.create_update_spreadsheet(submission, template_manager, path)
+        submission, template_manager = self.importer.import_file(path, submission_url, is_update, project_uuid)
+        self.importer.create_update_spreadsheet(submission, template_manager, path)
         _LOGGER.info('Spreadsheet upload done!')
 
 
