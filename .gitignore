@@ -111,3 +111,5 @@ _local/
 venv*/
 
 test/*/*.xlsx
+
+_local/
