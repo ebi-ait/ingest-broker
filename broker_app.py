@@ -184,7 +184,7 @@ def get_spreadsheet(job_id: str):
 
 
 # http://0.0.0.0:5000/schemas?high_level_entity=type&domain_entity=biomaterial&concrete_entity=donor_organism&latest&json
-# http://0.0.0.0:5000/schemas?url=${schemaUrl}&json&deref`
+# http://0.0.0.0:5000/schemas?url=${schemaUrl}&json&deref
 @app.route('/schemas', methods=['GET'])
 def get_schemas():
     args = request.args
