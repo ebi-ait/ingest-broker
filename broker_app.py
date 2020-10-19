@@ -182,6 +182,9 @@ def get_spreadsheet(job_id: str):
             mimetype='application/json'
         )
 
+# TODO Currently, we also have schema endpoints in Ingest Core and technically this can be implemented there
+# Those endpoints could also be removed from core and have a separate schema service for retrieving information about
+# the metadata schema and integrated with the schema release process
 
 # http://0.0.0.0:5000/schemas?high_level_entity=type&domain_entity=biomaterial&concrete_entity=donor_organism&latest&json
 # http://0.0.0.0:5000/schemas?url=${schemaUrl}&json&deref
