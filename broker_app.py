@@ -5,20 +5,23 @@ import logging
 import os
 import sys
 import traceback
+from http import HTTPStatus
 
 import jsonpickle
-from flask import Flask, request, redirect, send_file
+from flask import Flask, request, redirect, send_file, jsonify
 from flask import json
 from flask_cors import CORS, cross_origin
 from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
 
+from broker.service.schema_service import SchemaService
 from broker.service.spreadsheet_storage.spreadsheet_storage_exceptions import SubmissionSpreadsheetDoesntExist
 from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadService, SpreadsheetUploadError
 from broker.service.summary_service import SummaryService
 from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec
-from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, JobStatus
+from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, \
+    JobStatus
 
 logging.getLogger('ingest').setLevel(logging.INFO)
 logging.getLogger('ingest.api.ingestapi').setLevel(logging.INFO)
@@ -43,7 +46,9 @@ Nothing else for you to do - check back later."
 
 SPREADSHEET_UPLOAD_MESSAGE_ERROR = "We experienced a problem while uploading your spreadsheet"
 
-spreadsheet_job_manager = SpreadsheetJobManager(SpreadsheetGenerator(IngestApi()), SPREADSHEET_STORAGE_DIR)
+ingest_api = IngestApi()
+spreadsheet_generator = SpreadsheetGenerator(ingest_api)
+spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
 
 
 @app.route('/', methods=['GET'])
@@ -92,7 +97,7 @@ def get_submission_spreadsheet(submission_uuid):
 
 @app.route('/projects/<project_uuid>/summary', methods=['GET'])
 def project_summary(project_uuid):
-    project = IngestApi().get_project_by_uuid(project_uuid)
+    project = ingest_api.get_project_by_uuid(project_uuid)
     summary = SummaryService().summary_for_project(project)
 
     return app.response_class(
@@ -104,7 +109,7 @@ def project_summary(project_uuid):
 
 @app.route('/submissions/<submission_uuid>/summary', methods=['GET'])
 def submission_summary(submission_uuid):
-    submission = IngestApi().get_submission_by_uuid(submission_uuid)
+    submission = ingest_api.get_submission_by_uuid(submission_uuid)
     summary = SummaryService().summary_for_submission(submission)
 
     return app.response_class(
@@ -177,9 +182,56 @@ def get_spreadsheet(job_id: str):
             mimetype='application/json'
         )
 
+# TODO Currently, we also have schema endpoints in Ingest Core and technically this can be implemented there
+# Those endpoints could also be removed from core and have a separate schema service for retrieving information about
+# the metadata schema and integrated with the schema release process
+
+# http://0.0.0.0:5000/schemas?high_level_entity=type&domain_entity=biomaterial&concrete_entity=donor_organism&latest&json
+# http://0.0.0.0:5000/schemas?url=${schemaUrl}&json&deref
+@app.route('/schemas', methods=['GET'])
+def get_schemas():
+    args = request.args
+
+    # params
+    url = args.get('url')
+    high_level_entity = args.get('high_level_entity')
+    domain_entity = args.get('domain_entity')
+    concrete_entity = args.get('concrete_entity')
+
+    # flags
+    json_schema = 'json' in args
+    deref = 'deref' in args
+    latest = 'latest' in args
+
+    schema_service = SchemaService()
+
+    if not url and latest:
+        result = ingest_api.get_schemas(
+            latest_only=latest,
+            high_level_entity=high_level_entity,
+            domain_entity=domain_entity,
+            concrete_entity=concrete_entity
+        )
+
+        latest_schema = result[0] if len(result) > 0 else None
+
+        if not json_schema:
+            return response_json(HTTPStatus.OK, latest_schema)
+
+        url = latest_schema["_links"]["json-schema"]["href"]
+
+    if json_schema and url and deref:
+        data = schema_service.get_dereferenced_schema(url)
+        return response_json(HTTPStatus.OK, data)
+
+    if json_schema and url and not deref:
+        data = schema_service.get_json_schema(url)
+        return response_json(HTTPStatus.OK, data)
+
+    return response_json(HTTPStatus.NOT_FOUND, None)
+
 
 def _upload_spreadsheet(is_update=False):
-    ingest_api = IngestApi()
     storage_service = SpreadsheetStorageService(SPREADSHEET_STORAGE_DIR)
     importer = XlsImporter(ingest_api)
     spreadsheet_upload_svc = SpreadsheetUploadService(ingest_api, storage_service, importer)
@@ -193,17 +245,22 @@ def _upload_spreadsheet(is_update=False):
         submission_resource = spreadsheet_upload_svc.async_upload(token, request_file, is_update, project_uuid)
         logger.info(f'Created Submission: {submission_resource["_links"]["self"]["href"]}')
     except SpreadsheetUploadError as error:
-        return _failure_response(error.http_code,
-                                 error.message,
-                                 error.details)
+        return response_json(error.http_code, {
+            "message": error.message,
+            "details": error.details,
+        })
+
     except Exception as error:
         logger.error(traceback.format_exc())
-        return _failure_response(500, SPREADSHEET_UPLOAD_MESSAGE_ERROR, str(error))
+        return response_json(500, {
+            "message": SPREADSHEET_UPLOAD_MESSAGE_ERROR,
+            "details": str(error),
+        })
     else:
-        return _success_response(submission_resource)
+        return _create_submission_success_response(submission_resource)
 
 
-def _success_response(submission_resource):
+def _create_submission_success_response(submission_resource):
     submission_uuid = submission_resource['uuid']['uuid']
     submission_url = submission_resource['_links']['self']['href']
     submission_id = submission_url.rsplit('/', 1)[-1]
@@ -217,25 +274,16 @@ def _success_response(submission_resource):
         }
     }
 
-    success_response = app.response_class(
-        response=json.dumps(data),
-        status=201,
-        mimetype='application/json'
-    )
-    return success_response
+    return response_json(201, data)
 
 
-def _failure_response(status_code, message, details):
-    data = {
-        "message": message,
-        "details": details,
-    }
-    failure_response = app.response_class(
+def response_json(status_code, data):
+    response = app.response_class(
         response=json.dumps(data),
         status=status_code,
         mimetype='application/json'
     )
-    return failure_response
+    return response
 
 
 if __name__ == '__main__':
