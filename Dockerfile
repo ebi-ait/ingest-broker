@@ -1,5 +1,5 @@
-FROM python:3.6-slim
-MAINTAINER Simon Jupp "jupp@ebi.ac.uk"
+FROM quay.io/ebi-ait/ingest-base-images:python_3.6-slim
+LABEL maintainer="hca-ingest-dev@ebi.ac.uk"
 
 RUN mkdir /app
 WORKDIR /app/
