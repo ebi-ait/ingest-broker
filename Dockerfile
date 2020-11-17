@@ -1,4 +1,4 @@
-FROM quay.io/ebi-ait/ingest-base-images:python_3.7-alpine
+FROM quay.io/ebi-ait/ingest-base-images:python_3.6-slim
 LABEL maintainer="hca-ingest-dev@ebi.ac.uk"
 
 RUN mkdir /app
