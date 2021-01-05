@@ -8,7 +8,7 @@ itsdangerous==0.24
 jdcal==1.4
 MarkupSafe==1.1
 werkzeug>=0.15.3
--e git+https://github.com/ebi-ait/ingest-client.git@1f3a6d0c#egg=hca_ingest
+-e git+https://github.com/ebi-ait/ingest-client.git@988980b#egg=hca_ingest
 jsonpickle~=1.2
 expiringdict==1.1.4
 jsonpath-rw
