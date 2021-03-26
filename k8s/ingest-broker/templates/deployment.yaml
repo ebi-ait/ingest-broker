@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    app.gitlab.com/app: {{ .Values.gitlab_app }}
+    app.gitlab.com/env: {{ .Values.gitlab_env }}
+  labels:
+    role: ingestion
+  name: ingest-broker
+  namespace: {{ .Values.environment }}-environment
+spec:
+  selector:
+    matchLabels:
+      app: ingest-broker
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      labels:
+        app: ingest-broker
+      annotations:
+        app.gitlab.com/app: { { .Values.gitlab_app } }
+        app.gitlab.com/env: { { .Values.gitlab_env } }
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      dnsPolicy: Default
+      volumes:
+      - name: spreadsheet-storage
+        persistentVolumeClaim:
+          claimName: spreadsheet-storage-claim
+      containers:
+      - env:
+        - name: INGEST_UI
+          value: https://{{ .Values.ui }}
+        - name: INGEST_API
+          value: http://${INGEST_CORE_SERVICE_SERVICE_HOST}:${INGEST_CORE_SERVICE_SERVICE_PORT}
+        - name: SPREADSHEET_STORAGE_DIR
+          value: /data/spreadsheets
+        image: quay.io/ebi-ait/ingest-broker:{{ .Values.image }}
+        imagePullPolicy: Always
+        name: ingest-broker
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - mountPath: /data/spreadsheets
+          name: spreadsheet-storage
