@@ -18,8 +18,8 @@ spec:
       labels:
         app: ingest-broker
       annotations:
-        app.gitlab.com/app: { { .Values.gitlab_app } }
-        app.gitlab.com/env: { { .Values.gitlab_env } }
+        app.gitlab.com/app: {{ .Values.gitlab_app }}
+        app.gitlab.com/env: {{ .Values.gitlab_env }}
         rollme: {{ randAlphaNum 5 | quote }}
     spec:
       dnsPolicy: Default
