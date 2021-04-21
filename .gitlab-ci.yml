@@ -4,6 +4,8 @@ include:
 Unit Test:
   image: quay.io/ebi-ait/ingest-base-images:python_3.6-slim
   script:
+    - apt-get update
+    - apt-get install -y git
     - pip install -r requirements.txt
     - INGEST_API=https://api.ingest.dev.archive.data.humancellatlas.org
     - nosetests
