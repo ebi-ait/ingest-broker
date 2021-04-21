@@ -7,6 +7,9 @@ from broker_app import app as _app
 
 class BrokerAppTest(TestCase):
     def setUp(self):
+        # Note: IngestApi will call the API endpoint to retrieve links (see IngestApi._get_ingest_links)
+        # This should really be mocked but for now setting
+        # INGEST_API=https://api.ingest.dev.archive.data.humancellatlas.org in the env vars will fix
         _app.testing = True
         self.app = _app.test_client()
 
