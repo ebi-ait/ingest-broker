@@ -2,14 +2,14 @@ from unittest import TestCase
 from unittest.mock import patch, Mock
 
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadError
-from broker_app import app as _app
+from broker_app import app as _app, setup
 
 
 class BrokerAppTest(TestCase):
-    def setUp(self):
-        # Note: IngestApi will call the API endpoint to retrieve links (see IngestApi._get_ingest_links)
-        # This should really be mocked but for now setting
-        # INGEST_API=https://api.ingest.dev.archive.data.humancellatlas.org in the env vars will fix
+    @patch('broker_app.IngestApi')
+    @patch('broker_app.SpreadsheetGenerator')
+    def setUp(self, mock_ingest, mock_spreadsheet_generator):
+        setup()
         _app.testing = True
         self.app = _app.test_client()
 
