@@ -6,8 +6,8 @@ from broker_app import app as _app, setup
 
 
 class BrokerAppTest(TestCase):
-    @patch('broker_app.IngestApi')
     @patch('broker_app.SpreadsheetGenerator')
+    @patch('broker_app.IngestApi')
     def setUp(self, mock_ingest, mock_spreadsheet_generator):
         setup()
         _app.testing = True
