@@ -81,7 +81,6 @@ class BrokerAppTest(TestCase):
         with self.request_context:
             with patch.object(broker_app, "request") as mock_request:
                 # given
-                mock_request = patch.object(flask, "request")
                 mock_request.files = {'file': 'content'.encode()}
                 mock_request.form = {}
                 mock_headers = Mock('headers')
