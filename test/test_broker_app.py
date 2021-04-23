@@ -6,11 +6,6 @@ from broker_app import app as _app, setup
 import broker_app
 
 class BrokerAppTest(TestCase):
-    @patch('broker_app.SpreadsheetGenerator')
-    @patch('broker_app.IngestApi')
-    def setUp(self, mock_ingest, mock_spreadsheet_generator):
-        setup()
-
     def run(self, result=None):
         with _app.test_request_context():
             with _app.test_client() as client:
@@ -18,6 +13,14 @@ class BrokerAppTest(TestCase):
                     self.mock_request = mock_request
                     self.app = client
                     super(BrokerAppTest, self).run(result)
+
+
+    @patch('broker_app.SpreadsheetGenerator')
+    @patch('broker_app.IngestApi')
+    def test_setup(self, mock_ingest, mock_spreadsheet_generator):
+        setup()
+        mock_ingest.assert_called_once()
+        mock_spreadsheet_generator.assert_called_once_with(mock_ingest())
 
     @patch('broker_app.os.environ')
     @patch('broker_app.IngestApi')
