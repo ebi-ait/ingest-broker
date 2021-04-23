@@ -9,4 +9,4 @@ Unit Test:
     - pip install -r requirements.txt
     - pip install -r requirements-dev.txt
     - INGEST_API=https://api.ingest.dev.archive.data.humancellatlas.org
-    - nosetests
+    - nosetests --processes=-1
