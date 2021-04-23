@@ -5,6 +5,7 @@ from broker.service.spreadsheet_upload_service import SpreadsheetUploadError
 from broker_app import app as _app, setup
 import broker_app
 
+
 class BrokerAppTest(TestCase):
     def run(self, result=None):
         with _app.test_request_context():
@@ -14,7 +15,6 @@ class BrokerAppTest(TestCase):
                     self.app = client
                     super(BrokerAppTest, self).run(result)
 
-
     @patch('broker_app.SpreadsheetJobManager')
     @patch('broker_app.SpreadsheetGenerator')
     @patch('broker_app.IngestApi')
@@ -23,7 +23,6 @@ class BrokerAppTest(TestCase):
         mock_ingest.assert_called_once()
         mock_spreadsheet_generator.assert_called_once_with(mock_ingest())
         mock_spreadsheet_manager.assert_called_once_with(mock_spreadsheet_generator(mock_ingest()), None)
-
 
     @patch('broker_app.os.environ')
     @patch('broker_app.IngestApi')
