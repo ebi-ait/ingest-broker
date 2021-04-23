@@ -112,7 +112,7 @@ class SummaryService:
                                   list(self.get_entities_in_submission(submission_uri, 'files')))
 
     def get_submissions_in_project(self, project_resource) -> Generator[dict, None, None]:
-        yield from self.ingestapi.getRelatedEntities('submissionEnvelopes', project_resource, 'submissionEnvelopes')
+        yield from self.ingestapi.get_related_entities('submissionEnvelopes', project_resource, 'submissionEnvelopes')
 
     @staticmethod
     def generate_summary_for_entity(entities) -> EntitySummary:
