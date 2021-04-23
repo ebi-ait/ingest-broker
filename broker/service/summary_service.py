@@ -102,7 +102,7 @@ class SummaryService:
         return submission_summary
 
     def get_entities_in_submission(self, submission_uri, entity_type) -> Generator[dict, None, None]:
-        yield from self.ingestapi.getEntities(submission_uri, entity_type, 1000)
+        yield from self.ingestapi.get_entities(submission_uri, entity_type)
 
     def get_all_entities_in_submission(self, submission_uri):
         return SubmissionEntities(list(self.get_entities_in_submission(submission_uri, 'biomaterials')),
