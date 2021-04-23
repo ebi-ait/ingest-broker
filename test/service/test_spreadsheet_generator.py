@@ -14,6 +14,7 @@ import yaml
 
 class TestSpreadsheetGenerator(TestCase):
 
+    @skip("This is an integration test")
     def test_link_column_generation(self):
         cell_suspension_spec = TypeSpec("cell_suspension", IncludeAllModules(), False, LinkSpec(["donor_organism"], []))
 
@@ -65,6 +66,7 @@ class TestSpreadsheetGenerator(TestCase):
 
         self.assertEqual(spreadsheet_spec.hashcode(), SpreadsheetSpec.from_dict(spreadsheet_spec_dict).hashcode())
 
+    @skip("This is an integration test")
     def test_template_tabs_from_parsed_tabs(self):
         test_type_spec_1 = TypeSpec("project", IncludeAllModules(), False, LinkSpec([], []))
         test_type_spec_2 = TypeSpec("imaged_specimen", IncludeAllModules(), True, LinkSpec([], ["imaging_protocol"]))
@@ -95,6 +97,7 @@ class TestSpreadsheetGenerator(TestCase):
         self.assertTrue("Project" in [tab.display_name for tab in template_tabs])
         self.assertTrue(any("specimen_from_organism.biomaterial_core.biomaterial_id" in cols for cols in [tab.columns for tab in template_tabs]))
 
+    @skip("This is an integration test")
     def test_user_friendly_names(self):
         ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
         ingest_api = IngestApi(ingest_url)
@@ -159,6 +162,7 @@ class TestSpreadsheetGenerator(TestCase):
 
         self.assertFalse(name_error)
 
+    @skip("This is an integration test")
     def test_generate(self):
         ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
         ingest_api = IngestApi(ingest_url)
