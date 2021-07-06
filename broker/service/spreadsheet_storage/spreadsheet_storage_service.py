@@ -1,5 +1,7 @@
 import os
 import json
+import time
+from shutil import copyfile
 from .spreadsheet_storage_exceptions import SubmissionSpreadsheetAlreadyExists, SubmissionSpreadsheetDoesntExist
 
 
@@ -9,7 +11,7 @@ class SpreadsheetStorageService:
         self.storage_dir = storage_dir
         self.storage_manifest_name = storage_manifest_name
 
-    def store(self, submission_uuid, spreadsheet_name, spreadsheet_blob):
+    def store_submission_spreadsheet(self, submission_uuid, spreadsheet_name, spreadsheet_blob):
         """
         Stores a given spreadsheet at path <submission_uuid>/<spreadsheetname>, local to
         the storage directory
@@ -18,20 +20,29 @@ class SpreadsheetStorageService:
         :param spreadsheet_blob:
         :return:
         """
-        submission_dir = f'{self.storage_dir}/{submission_uuid}'
+        submission_dir = self.get_submission_dir(submission_uuid)
         try:
             os.mkdir(submission_dir)
-            submission_spreadsheet_path = f'{submission_dir}/{spreadsheet_name}'
-            storage_manifest_path = f'{submission_dir}/{self.storage_manifest_name}'
-            with open(submission_spreadsheet_path, "wb") as spreadsheet_file:
-                spreadsheet_file.write(spreadsheet_blob)
-                with open(storage_manifest_path, "w") as storage_manfiest:
-                    json.dump({"name": spreadsheet_name, "location": submission_spreadsheet_path}, storage_manfiest)
-                    return submission_spreadsheet_path
+            submission_spreadsheet_path = self.store_binary_file(submission_dir, spreadsheet_name, spreadsheet_blob)
+            manifest_content = {"name": spreadsheet_name, "location": submission_spreadsheet_path}
+            self.store_json_file(submission_dir, self.storage_manifest_name, manifest_content)
+            return submission_spreadsheet_path
         except FileExistsError:
             raise SubmissionSpreadsheetAlreadyExists()
 
-    def retrieve(self, submission_uuid):
+    def store_binary_file(self, directory: str, filename:str, blob):
+        path = f'{directory}/{filename}'
+        with open( path, "wb") as file:
+            file.write(blob)
+        return path
+
+    def store_json_file(self, directory: str, filename: str, data: dict):
+        path = f'{directory}/{filename}'
+        with open(path, "w") as json_file:
+            json.dump(data, json_file)
+        return path
+
+    def retrieve_submission_spreadsheet(self, submission_uuid):
         try:
             spreadsheet_location = self.get_spreadsheet_location(submission_uuid)
             spreadsheet_name = spreadsheet_location["name"]
@@ -59,3 +70,6 @@ class SpreadsheetStorageService:
                         raise SubmissionSpreadsheetDoesntExist()
                     else:
                         return {"name": spreadsheet_name, "path": spreadsheet_path}
+
+    def get_submission_dir(self, submission_uuid):
+        return f'{self.storage_dir}/{submission_uuid}'

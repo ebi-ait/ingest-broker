@@ -20,7 +20,7 @@ class SpreadsheetUploadServiceTest(TestCase):
 
     def test_upload_success(self):
         # given:
-        self.importer.create_update_spreadsheet = Mock()
+        self.importer.update_spreadsheet_with_uuids = Mock()
         spreadsheet_upload_service = SpreadsheetUploadService(self.ingest_api, self.storage_service, self.importer)
         submission_resource = {
             'uuid': {'uuid': 'submission-uuid'},
@@ -33,13 +33,13 @@ class SpreadsheetUploadServiceTest(TestCase):
         }
 
         # when
-        spreadsheet_upload_service._upload(submission_resource, 'path', is_update=False)
+        spreadsheet_upload_service._upload(submission_resource, 'path')
 
-        self.importer.create_update_spreadsheet.assert_called_with(self.mock_submission, self.mock_template_mgr, 'path')
+        self.importer.update_spreadsheet_with_uuids.assert_called_with(self.mock_submission, self.mock_template_mgr, 'path')
 
     def test_upload_update_success(self):
         # given:
-        self.importer.create_update_spreadsheet = Mock()
+        self.importer.update_spreadsheet_with_uuids = Mock()
         spreadsheet_upload_service = SpreadsheetUploadService(self.ingest_api, self.storage_service, self.importer)
         submission_resource = {
             'uuid': {'uuid': 'submission-uuid'},
@@ -52,6 +52,6 @@ class SpreadsheetUploadServiceTest(TestCase):
         }
 
         # when
-        spreadsheet_upload_service._upload(submission_resource, 'path', is_update=True)
+        spreadsheet_upload_service._upload(submission_resource, 'path')
 
-        self.importer.create_update_spreadsheet.assert_called_with(self.mock_submission, self.mock_template_mgr, 'path')
+        self.importer.update_spreadsheet_with_uuids.assert_called_with(self.mock_submission, self.mock_template_mgr, 'path')

@@ -1,5 +1,7 @@
 import logging
+import os
 import threading
+import time
 
 from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
@@ -16,28 +18,46 @@ class SpreadsheetUploadService:
         self.storage_service = storage_service
         self.importer = importer
 
-    def async_upload(self, token, request_file, is_update, project_uuid=None):
+    def async_upload(self, token, request_file, is_update, project_uuid=None, submission_uuid=None):
         if token is None:
             raise SpreadsheetUploadError(401, "An authentication token must be supplied when uploading a spreadsheet")
 
         self.ingest_api.set_token(token)
-        submission_resource = self.ingest_api.create_submission(update_submission=is_update)
+
+        if submission_uuid:
+            submission_resource = self.ingest_api.get_submission_by_uuid(submission_uuid)
+        else:
+            submission_resource = self.ingest_api.create_submission(update_submission=is_update)
 
         filename = secure_filename(request_file.filename)
 
         submission_uuid = submission_resource["uuid"]["uuid"]
-        path = self.storage_service.store(submission_uuid, filename, request_file.read())
+        submission_directory = self.storage_service.get_submission_dir(submission_uuid)
 
-        thread = threading.Thread(target=self._upload,
-                                  args=(submission_resource, path, is_update, project_uuid))
+        if is_update:
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            filename_with_timestamp = f'{timestamp}_{filename}'
+
+            path = self.storage_service.store_binary_file(submission_directory, filename_with_timestamp, request_file.read())
+            thread = threading.Thread(target=self._upload_updates, args=(path,))
+        else:
+            path = self.storage_service.store_spreadsheet(submission_uuid, filename, request_file.read())
+            thread = threading.Thread(target=self._upload,
+                                      args=(submission_resource, path, project_uuid))
         thread.start()
+
         return submission_resource
 
-    def _upload(self, submission_resource, path, is_update, project_uuid=None):
+    def _upload(self, submission_resource, path, project_uuid=None):
         _LOGGER.info('Spreadsheet started!')
         submission_url = submission_resource["_links"]["self"]["href"].rsplit("{")[0]
-        submission, template_manager = self.importer.import_file(path, submission_url, is_update, project_uuid)
-        self.importer.create_update_spreadsheet(submission, template_manager, path)
+        submission, template_manager = self.importer.import_file(path, submission_url, project_uuid=project_uuid)
+        self.importer.update_spreadsheet_with_uuids(submission, template_manager, path)
+        _LOGGER.info('Spreadsheet upload done!')
+
+    def _upload_updates(self, path):
+        _LOGGER.info('Spreadsheet started!')
+        self.importer.import_file(path, is_update=True)
         _LOGGER.info('Spreadsheet upload done!')
 
 
