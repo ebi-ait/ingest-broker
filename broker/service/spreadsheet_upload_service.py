@@ -32,32 +32,33 @@ class SpreadsheetUploadService:
         filename = secure_filename(request_file.filename)
 
         submission_uuid = submission_resource["uuid"]["uuid"]
+        submission_url = submission_resource["_links"]["self"]["href"]
         submission_directory = self.storage_service.get_submission_dir(submission_uuid)
 
         if is_update:
             timestamp = time.strftime("%Y%m%d-%H%M%S")
             filename_with_timestamp = f'{timestamp}_{filename}'
-
+            # TODO This spreadsheet containing the updates is not downloadable anywhere yet
             path = self.storage_service.store_binary_file(submission_directory, filename_with_timestamp, request_file.read())
-            thread = threading.Thread(target=self._upload_updates, args=(path,))
+
+            thread = threading.Thread(target=self._upload_updates, args=(submission_url, path))
         else:
             path = self.storage_service.store_spreadsheet(submission_uuid, filename, request_file.read())
             thread = threading.Thread(target=self._upload,
-                                      args=(submission_resource, path, project_uuid))
+                                      args=(submission_url, path, project_uuid))
         thread.start()
 
         return submission_resource
 
-    def _upload(self, submission_resource, path, project_uuid=None):
+    def _upload(self, submission_url, path, project_uuid=None):
         _LOGGER.info('Spreadsheet started!')
-        submission_url = submission_resource["_links"]["self"]["href"].rsplit("{")[0]
         submission, template_manager = self.importer.import_file(path, submission_url, project_uuid=project_uuid)
         self.importer.update_spreadsheet_with_uuids(submission, template_manager, path)
         _LOGGER.info('Spreadsheet upload done!')
 
-    def _upload_updates(self, path):
+    def _upload_updates(self, submission_url, path):
         _LOGGER.info('Spreadsheet started!')
-        self.importer.import_file(path, is_update=True)
+        self.importer.import_file(path, submission_url, is_update=True)
         _LOGGER.info('Spreadsheet upload done!')
 
 
