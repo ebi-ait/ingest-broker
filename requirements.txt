@@ -1,11 +1,11 @@
-certifi==2020.12.5
-chardet==4.0.0
+certifi==2018.4.16
+chardet==3.0.4
 click==6.7
 et-xmlfile==1.0.1
 Flask-Cors==3.0.3
-idna==2.10
+idna==2.6
 itsdangerous==0.24
-jdcal==1.4.1
+jdcal==1.4
 MarkupSafe==1.1
 werkzeug>=0.15.3
 -e git+https://github.com/ebi-ait/ingest-client.git@7f04ab9a#egg=hca_ingest
