@@ -43,7 +43,7 @@ class SpreadsheetUploadService:
 
             thread = threading.Thread(target=self._upload_updates, args=(submission_url, path))
         else:
-            path = self.storage_service.store_spreadsheet(submission_uuid, filename, request_file.read())
+            path = self.storage_service.store_submission_spreadsheet(submission_uuid, filename, request_file.read())
             thread = threading.Thread(target=self._upload,
                                       args=(submission_url, path, project_uuid))
         thread.start()
