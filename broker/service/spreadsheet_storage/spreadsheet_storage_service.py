@@ -1,7 +1,5 @@
 import os
 import json
-import time
-from shutil import copyfile
 from .spreadsheet_storage_exceptions import SubmissionSpreadsheetAlreadyExists, SubmissionSpreadsheetDoesntExist
 
 
