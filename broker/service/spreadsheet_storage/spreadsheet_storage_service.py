@@ -29,14 +29,14 @@ class SpreadsheetStorageService:
             raise SubmissionSpreadsheetAlreadyExists()
 
     def store_binary_file(self, directory: str, filename:str, blob):
-        os.mkdir(directory, exist_ok=True)
+        os.makedirs(directory, exist_ok=True)
         path = f'{directory}/{filename}'
         with open( path, "wb") as file:
             file.write(blob)
         return path
 
     def store_json_file(self, directory: str, filename: str, data: dict):
-        os.mkdir(directory, exist_ok=True)
+        os.makedirs(directory, exist_ok=True)
         path = f'{directory}/{filename}'
         with open(path, "w") as json_file:
             json.dump(data, json_file)
