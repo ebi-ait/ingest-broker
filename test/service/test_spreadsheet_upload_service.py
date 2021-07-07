@@ -17,26 +17,20 @@ class SpreadsheetUploadServiceTest(TestCase):
         self.mock_template_mgr = Mock('template_mgr')
         self.importer = MagicMock('importer')
         self.importer.import_file = Mock(return_value=(self.mock_submission, self.mock_template_mgr))
+        self.importer.update_spreadsheet_with_uuids = Mock()
+        self.spreadsheet_upload_service = spreadsheet_upload_service = SpreadsheetUploadService(self.ingest_api, self.storage_service, self.importer)
 
     def test_upload_success(self):
-        # given:
-        self.importer.update_spreadsheet_with_uuids = Mock()
-        spreadsheet_upload_service = SpreadsheetUploadService(self.ingest_api, self.storage_service, self.importer)
-
         # when
-        spreadsheet_upload_service.upload('url', 'path')
+        self.spreadsheet_upload_service.upload('url', 'path')
 
         # then
         self.importer.import_file.assert_called_with('path', 'url', project_uuid=None)
         self.importer.update_spreadsheet_with_uuids.assert_called_with(self.mock_submission, self.mock_template_mgr, 'path')
 
     def test_upload_update_success(self):
-        # given:
-        self.importer.update_spreadsheet_with_uuids = Mock()
-        spreadsheet_upload_service = SpreadsheetUploadService(self.ingest_api, self.storage_service, self.importer)
-
         # when
-        spreadsheet_upload_service.upload_updates('url', 'path')
+        self.spreadsheet_upload_service.upload_updates('url', 'path')
 
         # then
         self.importer.import_file.assert_called_with('path', 'url', is_update=True)
