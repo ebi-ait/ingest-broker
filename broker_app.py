@@ -50,7 +50,6 @@ ingest_api = IngestApi()
 spreadsheet_generator = SpreadsheetGenerator(ingest_api)
 spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
 
-
 @app.route('/', methods=['GET'])
 def index():
     new_ui_url = os.environ.get('INGEST_UI')
@@ -122,6 +121,8 @@ def submission_summary(submission_uuid):
 @cross_origin()
 @app.route('/spreadsheets', methods=['POST'])
 def create_spreadsheet():
+    spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
+
     request_json = json.loads(request.data)
     filename = request_json["filename"]
     spreadsheet_spec = SpreadsheetSpec.from_dict(request_json["spec"])
@@ -144,6 +145,9 @@ def create_spreadsheet():
 @cross_origin()
 @app.route('/spreadsheets/download/<job_id>', methods=['GET'])
 def get_spreadsheet(job_id: str):
+    spreadsheet_generator = SpreadsheetGenerator(ingest_api)
+
+
     job_spec = spreadsheet_job_manager.load_job_spec(job_id)
     if job_spec.status == JobStatus.STARTED:
         return app.response_class(

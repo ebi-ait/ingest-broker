@@ -1,5 +1,6 @@
+import os
 from unittest import TestCase, skip
-from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec, TypeSpec,\
+from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec, TypeSpec, \
     LinkSpec, IncludeSomeModules, IncludeAllModules, TemplateTab, TemplateYaml
 from ingest.api.ingestapi import IngestApi
 from ingest.template.schema_template import SchemaTemplate
@@ -12,7 +13,12 @@ import pandas as pd
 import tempfile
 import yaml
 
+
+# TODO these are integration tests, could either move to a separate directory
+# or mock ingest calls
 class TestSpreadsheetGenerator(TestCase):
+    def setUp(self) -> None:
+        self.test_file = "ss2.xlsx"
 
     def test_link_column_generation(self):
         cell_suspension_spec = TypeSpec("cell_suspension", IncludeAllModules(), False, LinkSpec(["donor_organism"], []))
@@ -93,7 +99,8 @@ class TestSpreadsheetGenerator(TestCase):
         self.assertTrue("project" in [tab.schema_name for tab in template_tabs])
         self.assertTrue("contributors" in [tab.schema_name for tab in template_tabs])
         self.assertTrue("Project" in [tab.display_name for tab in template_tabs])
-        self.assertTrue(any("specimen_from_organism.biomaterial_core.biomaterial_id" in cols for cols in [tab.columns for tab in template_tabs]))
+        self.assertTrue(any("specimen_from_organism.biomaterial_core.biomaterial_id" in cols for cols in
+                            [tab.columns for tab in template_tabs]))
 
     def test_user_friendly_names(self):
         ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
@@ -195,21 +202,23 @@ class TestSpreadsheetGenerator(TestCase):
                                                                              "sequencing_protocol"]))])
 
         # check the spreadsheet exists
-        output_filename = spreadsheet_generator.generate(test_spreadsheet_spec, "ss2.xlsx")
-        self.assertTrue("ss2.xlsx" in output_filename)
+        output_filename = spreadsheet_generator.generate(test_spreadsheet_spec, self.test_file)
+        self.assertTrue(self.test_file in output_filename)
 
         # check the actual tab names equal the expected tab names
-        xls = pd.ExcelFile("ss2.xlsx")
-        actual_tab_names = xls.sheet_names
+        df = pd.read_excel(self.test_file, engine='openpyxl', sheet_name=None)
+        actual_tab_names = list(df.keys())
 
         # Note: "Project - Funding source(s)" is technically wrong, because the 'user friendly' name needs to be updated in the schema
         # from "Funding source(s)" to "Funders" here: https://schema.dev.archive.data.humancellatlas.org/type/project/14.1.0/project
 
-        expected_tab_names1 = ["Project", "Project - Contributors", "Project - Publications", "Project - Funding source(s)",
-                               "Donor organism", "Collection protocol", "Specimen from organism", "Organoid", "Cell line",
+        expected_tab_names1 = ["Project", "Project - Contributors", "Project - Publications",
+                               "Project - Funding source(s)",
+                               "Donor organism", "Collection protocol", "Specimen from organism", "Organoid",
+                               "Cell line",
                                "Imaged specimen", "Dissociation protocol", "Aggregate generation protocol",
                                "Differentiation protocol", "Ipsc induction protocol", "Cell suspension",
-                               "Imaging protocol", "Imaging protocol - Channel","Imaging protocol - Probe",
+                               "Imaging protocol", "Imaging protocol - Channel", "Imaging protocol - Probe",
                                "Imaging preparation protocol", "Image file", "Library preparation protocol",
                                "Sequencing protocol", "Supplementary file", "Sequence file", "Schemas"]
 
@@ -217,17 +226,29 @@ class TestSpreadsheetGenerator(TestCase):
 
         # check the row headers are present and correct.
         # note: it is difficult to extend this test to multiple tabs (too many expected row headers to list here). Any ideas/thoughts about how to extend it welcome.
-        xls = pd.ExcelFile("ss2.xlsx")
-        df = pd.read_excel(xls, "Project")
+
+        df = pd.read_excel(self.test_file, sheet_name='Project', engine='openpyxl')
         self.assertEqual(df.columns[0], "PROJECT LABEL (Required)")
-        self.assertEqual(df.iloc[0,0], "A short name for the project.")
-        self.assertEqual(df.iloc[2,0], "project.project_core.project_short_name")
+        self.assertEqual(df.iloc[0, 0], "A short name for the project.")
+        self.assertEqual(df.iloc[2, 0], "project.project_core.project_short_name")
 
         # note: it is difficult to extend this test to multiple tabs (too many expected column names to list here). Any ideas/thoughts about how to extend it welcome.
         expected_col_names = ["project.project_core.project_short_name", "project.project_core.project_title",
                               "project.project_core.project_description",
+                              "project.estimated_cell_count",
+                              "project.data_use_restrictions.text",
+                              "project.data_use_restrictions.ontology",
+                              "project.data_use_restrictions.ontology_label",
                               "project.supplementary_links", "project.insdc_project_accessions",
+                              "project.ega_accessions", "project.dbgap_accessions",
                               "project.geo_series_accessions", "project.array_express_accessions",
                               "project.insdc_study_accessions", "project.biostudies_accessions"]
         actual_col_names = list(df.iloc[2])
         self.assertEqual(expected_col_names, actual_col_names)
+
+    def tearDown(self) -> None:
+        if self.test_file:
+            if os.path.exists(self.test_file):
+                print(f'Deleting file {self.test_file}')
+                os.remove(self.test_file)
+                print(f'File {self.test_file} deleted')

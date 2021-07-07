@@ -12,7 +12,7 @@ class SpreadsheetStorageServiceTest(TestCase):
     def setUp(self):
         os.mkdir(TEST_STORAGE_DIR)
 
-    def test_store_spreadsheet(self):
+    def test_store_submission_spreadsheet(self):
         test_storage_dir = "test_storage_dir"
         mock_submission_uuid = "mock-uuid"
         mock_spreadsheet_name = "mock_spreadsheet.xls"
@@ -20,7 +20,7 @@ class SpreadsheetStorageServiceTest(TestCase):
         spreadsheet_storage_service = SpreadsheetStorageService(test_storage_dir)
 
         try:
-            spreadsheet_storage_service.store_spreadsheet(mock_submission_uuid, mock_spreadsheet_name, mock_spreadsheet_blob)
+            spreadsheet_storage_service.store_submission_spreadsheet(mock_submission_uuid, mock_spreadsheet_name, mock_spreadsheet_blob)
             assert True
         except Exception as e:
             assert False
@@ -33,7 +33,7 @@ class SpreadsheetStorageServiceTest(TestCase):
         spreadsheet_storage_service = SpreadsheetStorageService(test_storage_dir)
 
         try:
-            spreadsheet_storage_service.store_spreadsheet(mock_submission_uuid, mock_spreadsheet_name, mock_spreadsheet_blob)
+            spreadsheet_storage_service.store_submission_spreadsheet(mock_submission_uuid, mock_spreadsheet_name, mock_spreadsheet_blob)
             spreadsheet = spreadsheet_storage_service.retrieve_submission_spreadsheet(mock_submission_uuid)
             assert spreadsheet["name"] == mock_spreadsheet_name
             assert spreadsheet["blob"] == mock_spreadsheet_blob

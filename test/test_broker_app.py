@@ -4,6 +4,9 @@ from unittest.mock import patch, Mock
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadError
 from broker_app import app as _app
 
+request_ctx = _app.test_request_context()
+request_ctx.push()
+
 
 class BrokerAppTest(TestCase):
     def setUp(self):
@@ -49,7 +52,7 @@ class BrokerAppTest(TestCase):
         # then
         self.assertEqual(response.status_code, 201)
         self.assertRegex(str(response.data), 'url/9')
-        mock_async_upload.assert_called_with('token', 'content'.encode(), False, None)
+        mock_async_upload.assert_called_with('token', 'content'.encode(), False, None, None)
 
     @patch('broker_app.request')
     @patch('broker_app.SpreadsheetUploadService.async_upload')
@@ -69,7 +72,7 @@ class BrokerAppTest(TestCase):
         # then
         self.assertEqual(response.status_code, 500)
         self.assertRegex(str(response.data), 'message')
-        mock_async_upload.assert_called_with('token', 'content'.encode(), False, None)
+        mock_async_upload.assert_called_with('token', 'content'.encode(), False, None, None)
 
     @patch('broker_app.request')
     @patch('broker_app.IngestApi')
@@ -106,7 +109,7 @@ class BrokerAppTest(TestCase):
         # then
         self.assertEqual(response.status_code, 201)
         self.assertRegex(str(response.data), 'url/9')
-        mock_async_upload.assert_called_with('token', 'content'.encode(), True, None)
+        mock_async_upload.assert_called_with('token', 'content'.encode(), True, None, None)
 
     @patch('broker_app.request')
     @patch('broker_app.SpreadsheetUploadService.async_upload')
@@ -126,7 +129,7 @@ class BrokerAppTest(TestCase):
         # then
         self.assertEqual(response.status_code, 500)
         self.assertRegex(str(response.data), 'message')
-        mock_async_upload.assert_called_with('token', 'content'.encode(), True, None)
+        mock_async_upload.assert_called_with('token', 'content'.encode(), True, None, None)
 
     @patch('broker_app.request')
     @patch('broker_app.IngestApi')
