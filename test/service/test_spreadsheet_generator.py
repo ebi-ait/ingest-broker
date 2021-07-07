@@ -18,7 +18,8 @@ import yaml
 # or mock ingest calls
 class TestSpreadsheetGenerator(TestCase):
     def setUp(self) -> None:
-        self.test_file = "ss2.xlsx"
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.test_file = f"{self.temp_dir.name}/ss2.xlsx"
 
     def test_link_column_generation(self):
         cell_suspension_spec = TypeSpec("cell_suspension", IncludeAllModules(), False, LinkSpec(["donor_organism"], []))
@@ -247,8 +248,4 @@ class TestSpreadsheetGenerator(TestCase):
         self.assertEqual(expected_col_names, actual_col_names)
 
     def tearDown(self) -> None:
-        if self.test_file:
-            if os.path.exists(self.test_file):
-                print(f'Deleting file {self.test_file}')
-                os.remove(self.test_file)
-                print(f'File {self.test_file} deleted')
+        self.temp_dir.cleanup()
