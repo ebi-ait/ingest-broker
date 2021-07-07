@@ -41,22 +41,22 @@ class SpreadsheetUploadService:
             # TODO This spreadsheet containing the updates is not downloadable anywhere yet
             path = self.storage_service.store_binary_file(submission_directory, filename_with_timestamp, request_file.read())
 
-            thread = threading.Thread(target=self._upload_updates, args=(submission_url, path))
+            thread = threading.Thread(target=self.upload_updates, args=(submission_url, path))
         else:
             path = self.storage_service.store_submission_spreadsheet(submission_uuid, filename, request_file.read())
-            thread = threading.Thread(target=self._upload,
+            thread = threading.Thread(target=self.upload,
                                       args=(submission_url, path, project_uuid))
         thread.start()
 
         return submission_resource
 
-    def _upload(self, submission_url, path, project_uuid=None):
+    def upload(self, submission_url, path, project_uuid=None):
         _LOGGER.info('Spreadsheet started!')
         submission, template_manager = self.importer.import_file(path, submission_url, project_uuid=project_uuid)
         self.importer.update_spreadsheet_with_uuids(submission, template_manager, path)
         _LOGGER.info('Spreadsheet upload done!')
 
-    def _upload_updates(self, submission_url, path):
+    def upload_updates(self, submission_url, path):
         _LOGGER.info('Spreadsheet started!')
         self.importer.import_file(path, submission_url, is_update=True)
         _LOGGER.info('Spreadsheet upload done!')

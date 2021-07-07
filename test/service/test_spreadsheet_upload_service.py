@@ -22,36 +22,22 @@ class SpreadsheetUploadServiceTest(TestCase):
         # given:
         self.importer.update_spreadsheet_with_uuids = Mock()
         spreadsheet_upload_service = SpreadsheetUploadService(self.ingest_api, self.storage_service, self.importer)
-        submission_resource = {
-            'uuid': {'uuid': 'submission-uuid'},
-            '_links': {
-                'self': {
-                    'href': 'url'
-                }
-            },
-            'isUpdate': False
-        }
 
         # when
-        spreadsheet_upload_service._upload(submission_resource, 'path')
+        spreadsheet_upload_service.upload('url', 'path')
 
+        # then
+        self.importer.import_file.assert_called_with('path', 'url', project_uuid=None)
         self.importer.update_spreadsheet_with_uuids.assert_called_with(self.mock_submission, self.mock_template_mgr, 'path')
 
     def test_upload_update_success(self):
         # given:
         self.importer.update_spreadsheet_with_uuids = Mock()
         spreadsheet_upload_service = SpreadsheetUploadService(self.ingest_api, self.storage_service, self.importer)
-        submission_resource = {
-            'uuid': {'uuid': 'submission-uuid'},
-            '_links': {
-                'self': {
-                    'href': 'url'
-                }
-            },
-            'isUpdate': True
-        }
 
         # when
-        spreadsheet_upload_service._upload(submission_resource, 'path')
+        spreadsheet_upload_service.upload_updates('url', 'path')
 
-        self.importer.update_spreadsheet_with_uuids.assert_called_with(self.mock_submission, self.mock_template_mgr, 'path')
+        # then
+        self.importer.import_file.assert_called_with('path', 'url', is_update=True)
+        self.importer.update_spreadsheet_with_uuids.assert_not_called()
