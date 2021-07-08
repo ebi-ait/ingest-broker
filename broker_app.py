@@ -98,7 +98,7 @@ def get_submission_spreadsheet(submission_uuid):
 
 @app.route('/projects/<project_uuid>/summary', methods=['GET'])
 def project_summary(project_uuid):
-    project = g.ingest_api.get_project_by_uuid(project_uuid)
+    project = ingest_api.get_project_by_uuid(project_uuid)
     summary = SummaryService().summary_for_project(project)
 
     return app.response_class(
@@ -110,7 +110,7 @@ def project_summary(project_uuid):
 
 @app.route('/submissions/<submission_uuid>/summary', methods=['GET'])
 def submission_summary(submission_uuid):
-    submission = g.ingest_api.get_submission_by_uuid(submission_uuid)
+    submission = ingest_api.get_submission_by_uuid(submission_uuid)
     summary = SummaryService().summary_for_submission(submission)
 
     return app.response_class(
@@ -147,7 +147,7 @@ def create_spreadsheet():
 @cross_origin()
 @app.route('/spreadsheets/download/<job_id>', methods=['GET'])
 def get_spreadsheet(job_id: str):
-    job_spec = g.spreadsheet_job_manager.load_job_spec(job_id)
+    job_spec = spreadsheet_job_manager.load_job_spec(job_id)
     if job_spec.status == JobStatus.STARTED:
         return app.response_class(
             response=jsonpickle.encode({
@@ -162,7 +162,7 @@ def get_spreadsheet(job_id: str):
             mimetype='application/hal+json'
         )
     elif job_spec.status == JobStatus.COMPLETE:
-        with g.spreadsheet_job_manager.spreadsheet_for_job(job_id) as spreadsheet_blob:
+        with spreadsheet_job_manager.spreadsheet_for_job(job_id) as spreadsheet_blob:
             return send_file(
                 io.BytesIO(spreadsheet_blob.read()),
                 mimetype='application/octet-stream',
@@ -209,7 +209,7 @@ def get_schemas():
     schema_service = SchemaService()
 
     if not url and latest:
-        result = g.ingest_api.get_schemas(
+        result = ingest_api.get_schemas(
             latest_only=latest,
             high_level_entity=high_level_entity,
             domain_entity=domain_entity,
@@ -236,8 +236,8 @@ def get_schemas():
 
 def _upload_spreadsheet(is_update=False):
     storage_service = SpreadsheetStorageService(SPREADSHEET_STORAGE_DIR)
-    importer = XlsImporter(g.ingest_api)
-    spreadsheet_upload_svc = SpreadsheetUploadService(g.ingest_api, storage_service, importer)
+    importer = XlsImporter(ingest_api)
+    spreadsheet_upload_svc = SpreadsheetUploadService(ingest_api, storage_service, importer)
 
     token = request.headers.get('Authorization')
     request_file = request.files['file']
