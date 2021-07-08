@@ -46,10 +46,9 @@ Nothing else for you to do - check back later."
 
 SPREADSHEET_UPLOAD_MESSAGE_ERROR = "We experienced a problem while uploading your spreadsheet"
 
-global ingest_api
-global spreadsheet_generator
-global spreadsheet_job_manager
-
+ingest_api = IngestApi()
+spreadsheet_generator = SpreadsheetGenerator(ingest_api)
+spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
 
 @app.route('/', methods=['GET'])
 def index():
@@ -292,18 +291,7 @@ def response_json(status_code, data):
     return response
 
 
-def setup():
+if __name__ == '__main__':
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-    global ingest_api
-    global spreadsheet_generator
-    global spreadsheet_job_manager
-
-    ingest_api = IngestApi()
-    spreadsheet_generator = SpreadsheetGenerator(ingest_api)
-    spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
-
-
-if __name__ == '__main__':
-    setup()
     app.run(host='0.0.0.0', port=5000)
