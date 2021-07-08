@@ -14,8 +14,6 @@ import tempfile
 import yaml
 
 
-# TODO these are integration tests, could either move to a separate directory
-# or mock ingest calls
 class TestSpreadsheetGenerator(TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
