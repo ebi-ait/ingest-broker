@@ -19,7 +19,7 @@ class SpreadsheetUploadService:
         self.importer = importer
 
     def async_upload(self, token, request_file, is_update, project_uuid=None, submission_uuid=None):
-        self._assert_token_exists(token)
+        self._validate_token_exists(token)
         submission_resource = self._create_or_get_submission(submission_uuid)
 
         submission_uuid = submission_resource["uuid"]["uuid"]
@@ -53,7 +53,7 @@ class SpreadsheetUploadService:
             submission_resource = self.ingest_api.create_submission()
         return submission_resource
 
-    def _assert_token_exists(self, token):
+    def _validate_token_exists(self, token):
         if token is None:
             raise SpreadsheetUploadError(401, "An authentication token must be supplied when uploading a spreadsheet")
         self.ingest_api.set_token(token)
