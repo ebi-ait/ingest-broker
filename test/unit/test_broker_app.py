@@ -13,8 +13,6 @@ class BrokerAppTest(TestCase):
     def setUp(self):
         _app.testing = True
         self.app = _app.test_client()
-        with _app.test_request_context():
-            g.ingest_api = MagicMock()
 
     @patch('broker_app.os.environ')
     @patch('broker_app.IngestApi')
