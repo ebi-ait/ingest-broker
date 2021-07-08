@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 
 import io
+import json
+import jsonpickle
 import logging
 import os
 import sys
 import traceback
+
+from flask import Flask, request, redirect, send_file, g
+from flask_cors import CORS, cross_origin
+
 from http import HTTPStatus
 
-import jsonpickle
-from flask import Flask, request, redirect, send_file, jsonify
-from flask import json
-from flask_cors import CORS, cross_origin
 from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
 
@@ -46,9 +48,6 @@ Nothing else for you to do - check back later."
 
 SPREADSHEET_UPLOAD_MESSAGE_ERROR = "We experienced a problem while uploading your spreadsheet"
 
-ingest_api = IngestApi()
-spreadsheet_generator = SpreadsheetGenerator(ingest_api)
-spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
 
 @app.route('/', methods=['GET'])
 def index():
@@ -96,7 +95,7 @@ def get_submission_spreadsheet(submission_uuid):
 
 @app.route('/projects/<project_uuid>/summary', methods=['GET'])
 def project_summary(project_uuid):
-    project = ingest_api.get_project_by_uuid(project_uuid)
+    project = g.ingest_api.get_project_by_uuid(project_uuid)
     summary = SummaryService().summary_for_project(project)
 
     return app.response_class(
@@ -108,7 +107,7 @@ def project_summary(project_uuid):
 
 @app.route('/submissions/<submission_uuid>/summary', methods=['GET'])
 def submission_summary(submission_uuid):
-    submission = ingest_api.get_submission_by_uuid(submission_uuid)
+    submission = g.ingest_api.get_submission_by_uuid(submission_uuid)
     summary = SummaryService().summary_for_submission(submission)
 
     return app.response_class(
@@ -121,7 +120,7 @@ def submission_summary(submission_uuid):
 @cross_origin()
 @app.route('/spreadsheets', methods=['POST'])
 def create_spreadsheet():
-    spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
+    spreadsheet_job_manager = SpreadsheetJobManager(g.spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
 
     request_json = json.loads(request.data)
     filename = request_json["filename"]
@@ -145,10 +144,7 @@ def create_spreadsheet():
 @cross_origin()
 @app.route('/spreadsheets/download/<job_id>', methods=['GET'])
 def get_spreadsheet(job_id: str):
-    spreadsheet_generator = SpreadsheetGenerator(ingest_api)
-
-
-    job_spec = spreadsheet_job_manager.load_job_spec(job_id)
+    job_spec = g.spreadsheet_job_manager.load_job_spec(job_id)
     if job_spec.status == JobStatus.STARTED:
         return app.response_class(
             response=jsonpickle.encode({
@@ -163,7 +159,7 @@ def get_spreadsheet(job_id: str):
             mimetype='application/hal+json'
         )
     elif job_spec.status == JobStatus.COMPLETE:
-        with spreadsheet_job_manager.spreadsheet_for_job(job_id) as spreadsheet_blob:
+        with g.spreadsheet_job_manager.spreadsheet_for_job(job_id) as spreadsheet_blob:
             return send_file(
                 io.BytesIO(spreadsheet_blob.read()),
                 mimetype='application/octet-stream',
@@ -210,7 +206,7 @@ def get_schemas():
     schema_service = SchemaService()
 
     if not url and latest:
-        result = ingest_api.get_schemas(
+        result = g.ingest_api.get_schemas(
             latest_only=latest,
             high_level_entity=high_level_entity,
             domain_entity=domain_entity,
@@ -237,8 +233,8 @@ def get_schemas():
 
 def _upload_spreadsheet(is_update=False):
     storage_service = SpreadsheetStorageService(SPREADSHEET_STORAGE_DIR)
-    importer = XlsImporter(ingest_api)
-    spreadsheet_upload_svc = SpreadsheetUploadService(ingest_api, storage_service, importer)
+    importer = XlsImporter(g.ingest_api)
+    spreadsheet_upload_svc = SpreadsheetUploadService(g.ingest_api, storage_service, importer)
 
     token = request.headers.get('Authorization')
     request_file = request.files['file']
@@ -291,7 +287,14 @@ def response_json(status_code, data):
     return response
 
 
-if __name__ == '__main__':
+def setup():
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    with app.app_context():
+        g.ingest_api = IngestApi()
+        g.spreadsheet_generator = SpreadsheetGenerator(g.ingest_api)
+        g.spreadsheet_job_manager = SpreadsheetJobManager(g.spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
 
+
+if __name__ == '__main__':
+    setup()
     app.run(host='0.0.0.0', port=5000)
