@@ -2,7 +2,7 @@ from unittest import TestCase
 from unittest.mock import patch, Mock
 
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadError
-from broker_app import app as _app
+from broker_app import app as _app, setup
 
 request_ctx = _app.test_request_context()
 request_ctx.push()
@@ -22,6 +22,15 @@ class BrokerAppTest(TestCase):
         response = self.app.get('/')
 
         self.assertEqual(response.status_code, 200)
+
+    @patch('broker_app.SpreadsheetJobManager')
+    @patch('broker_app.SpreadsheetGenerator')
+    @patch('broker_app.IngestApi')
+    def test_setup(self, mock_ingest, mock_spreadsheet_generator, mock_spreadsheet_manager):
+        setup()
+        mock_ingest.assert_called_once()
+        mock_spreadsheet_generator.assert_called_once_with(mock_ingest())
+        mock_spreadsheet_manager.assert_called_once_with(mock_spreadsheet_generator(mock_ingest()), None)
 
     @patch('broker_app.os.environ')
     @patch('broker_app.IngestApi')
