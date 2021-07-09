@@ -8,20 +8,20 @@ import traceback
 from http import HTTPStatus
 
 import jsonpickle
-from flask import Flask, request, redirect, send_file, jsonify
+from flask import Flask, request, redirect, send_file
 from flask import json
 from flask_cors import CORS, cross_origin
 from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
 
+from broker.submissions.routes import submissions_bp
 from broker.service.schema_service import SchemaService
-from broker.service.spreadsheet_storage.spreadsheet_storage_exceptions import SubmissionSpreadsheetDoesntExist
+from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator
+from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, \
+    JobStatus
 from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadService, SpreadsheetUploadError
 from broker.service.summary_service import SummaryService
-from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec
-from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, \
-    JobStatus
 
 logging.getLogger('ingest').setLevel(logging.INFO)
 logging.getLogger('ingest.api.ingestapi').setLevel(logging.INFO)
@@ -50,6 +50,7 @@ ingest_api = IngestApi()
 spreadsheet_generator = SpreadsheetGenerator(ingest_api)
 spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
 
+app.register_blueprint(submissions_bp)
 
 @app.route('/', methods=['GET'])
 def index():
@@ -75,42 +76,10 @@ def upload_update_spreadsheet():
     return _upload_spreadsheet(is_update=True)
 
 
-@app.route('/submissions/<submission_uuid>/spreadsheet', methods=['GET'])
-def get_submission_spreadsheet(submission_uuid):
-    try:
-        spreadsheet = SpreadsheetStorageService(SPREADSHEET_STORAGE_DIR).retrieve(submission_uuid)
-        spreadsheet_name = spreadsheet["name"]
-        spreadsheet_blob = spreadsheet["blob"]
-
-        return send_file(
-            io.BytesIO(spreadsheet_blob),
-            mimetype='application/octet-stream',
-            as_attachment=True,
-            attachment_filename=spreadsheet_name)
-    except SubmissionSpreadsheetDoesntExist as e:
-        return app.response_class(
-            response={"message": f'No spreadsheet found for submission with uuid {submission_uuid}'},
-            status=404,
-            mimetype='application/json'
-        )
-
-
 @app.route('/projects/<project_uuid>/summary', methods=['GET'])
 def project_summary(project_uuid):
     project = ingest_api.get_project_by_uuid(project_uuid)
     summary = SummaryService().summary_for_project(project)
-
-    return app.response_class(
-        response=jsonpickle.encode(summary, unpicklable=False),
-        status=200,
-        mimetype='application/json'
-    )
-
-
-@app.route('/submissions/<submission_uuid>/summary', methods=['GET'])
-def submission_summary(submission_uuid):
-    submission = ingest_api.get_submission_by_uuid(submission_uuid)
-    summary = SummaryService().summary_for_submission(submission)
 
     return app.response_class(
         response=jsonpickle.encode(summary, unpicklable=False),
