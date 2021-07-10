@@ -11,13 +11,17 @@ from broker.service.summary_service import SummaryService
 ingest_api = IngestApi()
 
 submissions_bp = Blueprint(
-    'submissions', __name__,
+    'submissions', __name__, url_prefix='/submissions'
 )
 
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet', methods=['GET'])
-def export_to_spreadsheet():
-    return f'not implemented'
+def export_to_spreadsheet(submission_uuid):
+    return app.response_class(
+        response=jsonpickle.encode(dict(submission_uuid=submission_uuid), unpicklable=False),
+        status=200,
+        mimetype='application/json'
+    )
 
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet/original', methods=['GET'])

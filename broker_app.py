@@ -14,7 +14,6 @@ from flask_cors import CORS, cross_origin
 from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
 
-from broker.submissions.routes import submissions_bp
 from broker.service.schema_service import SchemaService
 from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator
 from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, \
@@ -22,6 +21,7 @@ from broker.service.spreadsheet_generation.spreadsheet_job_manager import Spread
 from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadService, SpreadsheetUploadError
 from broker.service.summary_service import SummaryService
+from broker.submissions import submissions_bp
 
 logging.getLogger('ingest').setLevel(logging.INFO)
 logging.getLogger('ingest.api.ingestapi').setLevel(logging.INFO)
@@ -51,6 +51,7 @@ spreadsheet_generator = SpreadsheetGenerator(ingest_api)
 spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
 
 app.register_blueprint(submissions_bp)
+
 
 @app.route('/', methods=['GET'])
 def index():
@@ -256,6 +257,6 @@ def response_json(status_code, data):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    # logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
     app.run(host='0.0.0.0', port=5000)
