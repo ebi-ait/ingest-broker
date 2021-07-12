@@ -7,6 +7,7 @@ import io
 from broker.service.spreadsheet_storage.spreadsheet_storage_exceptions import SubmissionSpreadsheetDoesntExist
 from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
 from broker.service.summary_service import SummaryService
+from broker.submissions.export_to_spreadsheet_service import ExportToSpreadsheetService
 
 ingest_api = IngestApi()
 
@@ -17,8 +18,12 @@ submissions_bp = Blueprint(
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet', methods=['GET'])
 def export_to_spreadsheet(submission_uuid):
+    exported = {
+        'submission_uuid': submission_uuid,
+        'export': ExportToSpreadsheetService(ingest_api).export()
+    }
     return app.response_class(
-        response=jsonpickle.encode(dict(submission_uuid=submission_uuid), unpicklable=False),
+        response=jsonpickle.encode(dict(exported=exported), unpicklable=False),
         status=200,
         mimetype='application/json'
     )
