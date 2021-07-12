@@ -9,20 +9,21 @@ class ExportToSpreadsheetTestCase(TestCase):
     def setUp(self):
         _app.testing = True
 
-    @patch('broker_app.request')
-    @patch('broker_app.ExportToSpreadsheetService.export')
+    @patch('broker.submissions.ExportToSpreadsheetService.export')
     @patch('broker_app.IngestApi')
-    def test_export_to_spreadsheet_route(self, mock_ingest, mock_export, mock_request):
+    def test_export_to_spreadsheet_route(self, mock_ingest, mock_export):
         # given
+        mock_export.return_value = 'test export'
+        submission_id = 'xyz-001'
         # noting here yet
 
-        # when
         with _app.test_client() as app:
-            response = app.get('/submissions/sub-001/spreadsheet')
+            # when
+            response = app.get(f'/submissions/{submission_id}/spreadsheet')
 
             # then
-            self.assertEqual(response.status_code, 200)
-            mock_export.assert_called_with('sub-001')
+            mock_export.assert_called_with(submission_id)
+            self.assertEqual(200, response.status_code)
 
 
 if __name__ == '__main__':
