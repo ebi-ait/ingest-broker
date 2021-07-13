@@ -1,11 +1,11 @@
-import jsonpickle
-from flask import Blueprint, send_file
-from flask import current_app as app
-from ingest.api.ingestapi import IngestApi
-import io
+import os
+import tempfile
+import time
 
-from broker.service.spreadsheet_storage.spreadsheet_storage_exceptions import SubmissionSpreadsheetDoesntExist
-from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
+import jsonpickle
+from flask import Blueprint, send_from_directory, send_file
+from flask import current_app as app
+
 from broker.service.summary_service import SummaryService
 from broker.submissions.export_to_spreadsheet_service import ExportToSpreadsheetService
 
@@ -16,11 +16,13 @@ submissions_bp = Blueprint(
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet', methods=['GET'])
 def export_to_spreadsheet(submission_uuid):
-    exported = {
-        'submission_uuid': submission_uuid,
-        'export': ExportToSpreadsheetService(app.ingest_api).export(submission_uuid)
-    }
-    return dict(exported=exported), 501
+    workbook = ExportToSpreadsheetService(app.ingest_api).export(submission_uuid)
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    # TODO use temporary file / directory
+    filename = f'{submission_uuid}_{timestamp}.xlsx'
+    workbook.save(filename)
+    # TODO investigate if send_file is doing some caching
+    return send_file(filename, as_attachment=True)
 
 
 @submissions_bp.route('/<submission_uuid>/summary', methods=['GET'])
