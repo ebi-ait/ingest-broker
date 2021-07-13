@@ -1,8 +1,11 @@
 from unittest import TestCase
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, MagicMock
 
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadError
-from broker_app import app as _app
+from broker_app import app as _app, setup
+
+request_ctx = _app.test_request_context()
+request_ctx.push()
 
 
 class BrokerAppTest(TestCase):
@@ -19,6 +22,15 @@ class BrokerAppTest(TestCase):
         response = self.app.get('/')
 
         self.assertEqual(response.status_code, 200)
+
+    @patch('broker_app.SpreadsheetJobManager')
+    @patch('broker_app.SpreadsheetGenerator')
+    @patch('broker_app.IngestApi')
+    def test_setup(self, mock_ingest, mock_spreadsheet_generator, mock_spreadsheet_manager):
+        setup()
+        mock_ingest.assert_called_once()
+        mock_spreadsheet_generator.assert_called_once_with(mock_ingest())
+        mock_spreadsheet_manager.assert_called_once_with(mock_spreadsheet_generator(mock_ingest()), None)
 
     @patch('broker_app.os.environ')
     @patch('broker_app.IngestApi')
@@ -49,7 +61,6 @@ class BrokerAppTest(TestCase):
         # then
         self.assertEqual(response.status_code, 201)
         self.assertRegex(str(response.data), 'url/9')
-        mock_async_upload.assert_called_with('token', 'content'.encode(), False, None)
 
     @patch('broker_app.request')
     @patch('broker_app.SpreadsheetUploadService.async_upload')
@@ -69,7 +80,6 @@ class BrokerAppTest(TestCase):
         # then
         self.assertEqual(response.status_code, 500)
         self.assertRegex(str(response.data), 'message')
-        mock_async_upload.assert_called_with('token', 'content'.encode(), False, None)
 
     @patch('broker_app.request')
     @patch('broker_app.IngestApi')
@@ -106,7 +116,6 @@ class BrokerAppTest(TestCase):
         # then
         self.assertEqual(response.status_code, 201)
         self.assertRegex(str(response.data), 'url/9')
-        mock_async_upload.assert_called_with('token', 'content'.encode(), True, None)
 
     @patch('broker_app.request')
     @patch('broker_app.SpreadsheetUploadService.async_upload')
@@ -126,7 +135,6 @@ class BrokerAppTest(TestCase):
         # then
         self.assertEqual(response.status_code, 500)
         self.assertRegex(str(response.data), 'message')
-        mock_async_upload.assert_called_with('token', 'content'.encode(), True, None)
 
     @patch('broker_app.request')
     @patch('broker_app.IngestApi')

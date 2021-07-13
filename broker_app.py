@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import io
+import json
+import jsonpickle
 import logging
 import os
 import sys
@@ -216,10 +218,11 @@ def _upload_spreadsheet(is_update=False):
     token = request.headers.get('Authorization')
     request_file = request.files['file']
     project_uuid = request.form.get('projectUuid')
+    submission_uuid = request.form.get('submissionUuid')
 
     try:
         logger.info('Uploading spreadsheet!')
-        submission_resource = spreadsheet_upload_svc.async_upload(token, request_file, is_update, project_uuid)
+        submission_resource = spreadsheet_upload_svc.async_upload(token, request_file, is_update, project_uuid, submission_uuid)
         logger.info(f'Created Submission: {submission_resource["_links"]["self"]["href"]}')
     except SpreadsheetUploadError as error:
         return response_json(error.http_code, {
