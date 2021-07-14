@@ -1,9 +1,8 @@
-import os
 import tempfile
 import time
 
 import jsonpickle
-from flask import Blueprint, send_from_directory, send_file
+from flask import Blueprint, send_file
 from flask import current_app as app
 
 from broker.service.summary_service import SummaryService
@@ -18,11 +17,10 @@ submissions_bp = Blueprint(
 def export_to_spreadsheet(submission_uuid):
     workbook = ExportToSpreadsheetService(app.ingest_api).export(submission_uuid)
     timestamp = time.strftime("%Y%m%d-%H%M%S")
-    # TODO use temporary file / directory
+    temp_file = tempfile.NamedTemporaryFile()
     filename = f'{submission_uuid}_{timestamp}.xlsx'
-    workbook.save(filename)
-    # TODO investigate if send_file is doing some caching
-    return send_file(filename, as_attachment=True)
+    workbook.save(temp_file.name)
+    return send_file(temp_file.name, as_attachment=True, cache_timeout=0, attachment_filename=filename)
 
 
 @submissions_bp.route('/<submission_uuid>/summary', methods=['GET'])
