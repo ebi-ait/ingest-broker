@@ -5,6 +5,7 @@ from time import sleep
 from broker.service.summary_service import SummaryService
 from broker.service.submission_summary_cache import SubmissionSummaryCache
 
+
 class SummaryServiceTest(TestCase):
 
     def test_generate_summary_for_entity(self):

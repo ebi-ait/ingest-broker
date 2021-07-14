@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import io
+import json
+import jsonpickle
 import logging
 import os
 import sys
@@ -8,20 +10,20 @@ import traceback
 from http import HTTPStatus
 
 import jsonpickle
-from flask import Flask, request, redirect, send_file, jsonify
+from flask import Flask, request, redirect, send_file
 from flask import json
 from flask_cors import CORS, cross_origin
 from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
 
 from broker.service.schema_service import SchemaService
-from broker.service.spreadsheet_storage.spreadsheet_storage_exceptions import SubmissionSpreadsheetDoesntExist
+from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator
+from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, \
+    JobStatus
 from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadService, SpreadsheetUploadError
 from broker.service.summary_service import SummaryService
-from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec
-from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, \
-    JobStatus
+from broker.submissions import submissions_bp
 
 logging.getLogger('ingest').setLevel(logging.INFO)
 logging.getLogger('ingest.api.ingestapi').setLevel(logging.INFO)
@@ -34,11 +36,6 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
 
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, static_folder='static')
-app.secret_key = 'cells'
-cors = CORS(app, expose_headers=["Content-Disposition"])
-app.config['CORS_HEADERS'] = 'Content-Type'
-
 SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
 
 SPREADSHEET_UPLOAD_MESSAGE = "We’ve got your spreadsheet, and we’re currently importing and validating the data. \
@@ -46,9 +43,22 @@ Nothing else for you to do - check back later."
 
 SPREADSHEET_UPLOAD_MESSAGE_ERROR = "We experienced a problem while uploading your spreadsheet"
 
-ingest_api = IngestApi()
-spreadsheet_generator = SpreadsheetGenerator(ingest_api)
-spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
+def create_app():
+    app = Flask(__name__, static_folder='static')
+    app.secret_key = 'cells'
+    cors = CORS(app, expose_headers=["Content-Disposition"])
+    app.config['CORS_HEADERS'] = 'Content-Type'
+
+    app.ingest_api = IngestApi()
+    spreadsheet_generator = SpreadsheetGenerator(app.ingest_api)
+    app.spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
+
+    app.register_blueprint(submissions_bp)
+
+    return app
+
+
+app = create_app()
 
 
 @app.route('/', methods=['GET'])
@@ -75,42 +85,10 @@ def upload_update_spreadsheet():
     return _upload_spreadsheet(is_update=True)
 
 
-@app.route('/submissions/<submission_uuid>/spreadsheet', methods=['GET'])
-def get_submission_spreadsheet(submission_uuid):
-    try:
-        spreadsheet = SpreadsheetStorageService(SPREADSHEET_STORAGE_DIR).retrieve(submission_uuid)
-        spreadsheet_name = spreadsheet["name"]
-        spreadsheet_blob = spreadsheet["blob"]
-
-        return send_file(
-            io.BytesIO(spreadsheet_blob),
-            mimetype='application/octet-stream',
-            as_attachment=True,
-            attachment_filename=spreadsheet_name)
-    except SubmissionSpreadsheetDoesntExist as e:
-        return app.response_class(
-            response={"message": f'No spreadsheet found for submission with uuid {submission_uuid}'},
-            status=404,
-            mimetype='application/json'
-        )
-
-
 @app.route('/projects/<project_uuid>/summary', methods=['GET'])
 def project_summary(project_uuid):
-    project = ingest_api.get_project_by_uuid(project_uuid)
+    project = app.ingest_api.get_project_by_uuid(project_uuid)
     summary = SummaryService().summary_for_project(project)
-
-    return app.response_class(
-        response=jsonpickle.encode(summary, unpicklable=False),
-        status=200,
-        mimetype='application/json'
-    )
-
-
-@app.route('/submissions/<submission_uuid>/summary', methods=['GET'])
-def submission_summary(submission_uuid):
-    submission = ingest_api.get_submission_by_uuid(submission_uuid)
-    summary = SummaryService().summary_for_submission(submission)
 
     return app.response_class(
         response=jsonpickle.encode(summary, unpicklable=False),
@@ -125,7 +103,7 @@ def create_spreadsheet():
     request_json = json.loads(request.data)
     filename = request_json["filename"]
     spreadsheet_spec = SpreadsheetSpec.from_dict(request_json["spec"])
-    job_spec = spreadsheet_job_manager.create_job(spreadsheet_spec, filename)
+    job_spec = app.spreadsheet_job_manager.create_job(spreadsheet_spec, filename)
 
     return app.response_class(
         response=jsonpickle.encode({
@@ -144,7 +122,7 @@ def create_spreadsheet():
 @cross_origin()
 @app.route('/spreadsheets/download/<job_id>', methods=['GET'])
 def get_spreadsheet(job_id: str):
-    job_spec = spreadsheet_job_manager.load_job_spec(job_id)
+    job_spec = app.spreadsheet_job_manager.load_job_spec(job_id)
     if job_spec.status == JobStatus.STARTED:
         return app.response_class(
             response=jsonpickle.encode({
@@ -159,7 +137,7 @@ def get_spreadsheet(job_id: str):
             mimetype='application/hal+json'
         )
     elif job_spec.status == JobStatus.COMPLETE:
-        with spreadsheet_job_manager.spreadsheet_for_job(job_id) as spreadsheet_blob:
+        with app.spreadsheet_job_manager.spreadsheet_for_job(job_id) as spreadsheet_blob:
             return send_file(
                 io.BytesIO(spreadsheet_blob.read()),
                 mimetype='application/octet-stream',
@@ -181,6 +159,7 @@ def get_spreadsheet(job_id: str):
             status=500,
             mimetype='application/json'
         )
+
 
 # TODO Currently, we also have schema endpoints in Ingest Core and technically this can be implemented there
 # Those endpoints could also be removed from core and have a separate schema service for retrieving information about
@@ -206,7 +185,7 @@ def get_schemas():
     schema_service = SchemaService()
 
     if not url and latest:
-        result = ingest_api.get_schemas(
+        result = app.ingest_api.get_schemas(
             latest_only=latest,
             high_level_entity=high_level_entity,
             domain_entity=domain_entity,
@@ -233,16 +212,17 @@ def get_schemas():
 
 def _upload_spreadsheet(is_update=False):
     storage_service = SpreadsheetStorageService(SPREADSHEET_STORAGE_DIR)
-    importer = XlsImporter(ingest_api)
-    spreadsheet_upload_svc = SpreadsheetUploadService(ingest_api, storage_service, importer)
+    importer = XlsImporter(app.ingest_api)
+    spreadsheet_upload_svc = SpreadsheetUploadService(app.ingest_api, storage_service, importer)
 
     token = request.headers.get('Authorization')
     request_file = request.files['file']
     project_uuid = request.form.get('projectUuid')
+    submission_uuid = request.form.get('submissionUuid')
 
     try:
         logger.info('Uploading spreadsheet!')
-        submission_resource = spreadsheet_upload_svc.async_upload(token, request_file, is_update, project_uuid)
+        submission_resource = spreadsheet_upload_svc.async_upload(token, request_file, is_update, project_uuid, submission_uuid)
         logger.info(f'Created Submission: {submission_resource["_links"]["self"]["href"]}')
     except SpreadsheetUploadError as error:
         return response_json(error.http_code, {
@@ -287,6 +267,4 @@ def response_json(status_code, data):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-
     app.run(host='0.0.0.0', port=5000)
