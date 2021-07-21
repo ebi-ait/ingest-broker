@@ -90,6 +90,8 @@ ENV/
 env.bak/
 venv.bak/
 
+.flaskenv
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -109,6 +111,7 @@ venv.bak/
 # directory for anything specific only to environment
 _local/
 venv*/
+.venv*/
 
 test/*/*.xlsx
 
