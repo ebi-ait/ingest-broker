@@ -57,17 +57,17 @@ class SpreadsheetStorageService:
         submission_dir_path = f'{self.storage_dir}/{submission_uuid}'
         storage_manifest_path = f'{submission_dir_path}/{self.storage_manifest_name}'
         if not os.path.isdir(submission_dir_path):
-            raise SubmissionSpreadsheetDoesntExist()
+            raise SubmissionSpreadsheetDoesntExist(submission_uuid, submission_dir_path)
         else:
             if not os.path.isfile(storage_manifest_path):
-                raise SubmissionSpreadsheetDoesntExist()
+                raise SubmissionSpreadsheetDoesntExist(submission_uuid, storage_manifest_path)
             else:
                 with open(storage_manifest_path, "rb") as storage_manifest_file:
                     storage_manifest = json.load(storage_manifest_file)
                     spreadsheet_name = storage_manifest["name"]
                     spreadsheet_path = storage_manifest["location"]
                     if not os.path.isfile(spreadsheet_path):
-                        raise SubmissionSpreadsheetDoesntExist()
+                        raise SubmissionSpreadsheetDoesntExist(submission_uuid, spreadsheet_path)
                     else:
                         return {"name": spreadsheet_name, "path": spreadsheet_path}
 

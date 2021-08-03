@@ -6,8 +6,8 @@ import jsonpickle
 from flask import Blueprint, send_file
 from flask import current_app as app
 
-from broker.service.spreadsheet_storage.spreadsheet_storage_exceptions import SubmissionSpreadsheetDoesntExist
-from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
+from broker.service.spreadsheet_storage import SubmissionSpreadsheetDoesntExist
+from broker.service.spreadsheet_storage import SpreadsheetStorageService
 from broker.service.summary_service import SummaryService
 from broker.submissions.export_to_spreadsheet_service import ExportToSpreadsheetService
 
@@ -23,7 +23,10 @@ def export_to_spreadsheet(submission_uuid):
     temp_file = tempfile.NamedTemporaryFile()
     filename = f'{submission_uuid}_{timestamp}.xlsx'
     workbook.save(temp_file.name)
-    return send_file(temp_file.name, as_attachment=True, cache_timeout=0, attachment_filename=filename)
+    return send_file(temp_file.name,
+                     as_attachment=True,
+                     cache_timeout=0,
+                     attachment_filename=filename)
 
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet/original', methods=['GET'])
@@ -39,8 +42,11 @@ def get_submission_spreadsheet(submission_uuid):
             as_attachment=True,
             attachment_filename=spreadsheet_name)
     except SubmissionSpreadsheetDoesntExist as e:
+        err_msg = f'No spreadsheet found for submission with uuid {submission_uuid}. Missing path: {e.missing_path}'
+        response_msg = f'No spreadsheet found for submission with uuid {submission_uuid}'
+        app.logger.warning(err_msg)
         return app.response_class(
-            response={"message": f'No spreadsheet found for submission with uuid {submission_uuid}'},
+            response={"message": response_msg},
             status=404,
             mimetype='application/json'
         )

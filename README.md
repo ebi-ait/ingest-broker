@@ -32,10 +32,16 @@ Set `FLASK_APP` beforehand:
 
 ```bash
 export FLASK_APP=broker_app
+```
+
+then start flask
+
+```bash
 flask run
 ```
 
-You can set this and other app environment variables such as `INGEST_API` in a .env file.
+You can set this and other app environment variables such as `INGEST_API` in a `.flaskenv` file.
+See the [template](.flaskenv.template).
 See more in [flask's docs](https://flask.palletsprojects.com/en/2.0.x/cli/#environment-variables-from-dotenv)
 
 ## Running With Docker

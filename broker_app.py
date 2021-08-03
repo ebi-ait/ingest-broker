@@ -2,11 +2,9 @@
 
 import io
 import json
-import jsonpickle
 import logging
 import os
 import sys
-import traceback
 from http import HTTPStatus
 
 import jsonpickle
@@ -14,16 +12,15 @@ from flask import Flask, request, redirect, send_file
 from flask import json
 from flask_cors import CORS, cross_origin
 from ingest.api.ingestapi import IngestApi
-from ingest.importer.importer import XlsImporter
 
+from broker.common.util import response_json
 from broker.service.schema_service import SchemaService
 from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator
 from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, \
     JobStatus
-from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
-from broker.service.spreadsheet_upload_service import SpreadsheetUploadService, SpreadsheetUploadError
 from broker.service.summary_service import SummaryService
 from broker.submissions import submissions_bp
+from broker.upload import upload_bp
 
 logging.getLogger('ingest').setLevel(logging.INFO)
 logging.getLogger('ingest.api.ingestapi').setLevel(logging.INFO)
@@ -34,25 +31,23 @@ format = ' %(asctime)s  - %(name)s - %(levelname)s in %(filename)s:' \
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format=format)
 
-logger = logging.getLogger(__name__)
-
-SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
-
-SPREADSHEET_UPLOAD_MESSAGE = "We’ve got your spreadsheet, and we’re currently importing and validating the data. \
-Nothing else for you to do - check back later."
-
-SPREADSHEET_UPLOAD_MESSAGE_ERROR = "We experienced a problem while uploading your spreadsheet"
 
 def create_app():
     app = Flask(__name__, static_folder='static')
+    app.SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
+    app.SPREADSHEET_UPLOAD_MESSAGE = "We’ve got your spreadsheet, and we’re currently importing and validating the data. \
+Nothing else for you to do - check back later."
+
+    app.SPREADSHEET_UPLOAD_MESSAGE_ERROR = "We experienced a problem while uploading your spreadsheet"
     app.secret_key = 'cells'
     cors = CORS(app, expose_headers=["Content-Disposition"])
     app.config['CORS_HEADERS'] = 'Content-Type'
 
     app.ingest_api = IngestApi()
     spreadsheet_generator = SpreadsheetGenerator(app.ingest_api)
-    app.spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, SPREADSHEET_STORAGE_DIR)
+    app.spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, app.SPREADSHEET_STORAGE_DIR)
 
+    app.register_blueprint(upload_bp)
     app.register_blueprint(submissions_bp)
 
     return app
@@ -71,18 +66,6 @@ def index():
         status=200,
         mimetype='application/json'
     )
-
-
-@app.route('/api_upload', methods=['POST'])
-@cross_origin()
-def upload_spreadsheet():
-    return _upload_spreadsheet()
-
-
-@app.route('/api_upload_update', methods=['POST'])
-@cross_origin()
-def upload_update_spreadsheet():
-    return _upload_spreadsheet(is_update=True)
 
 
 @app.route('/projects/<project_uuid>/summary', methods=['GET'])
@@ -208,62 +191,6 @@ def get_schemas():
         return response_json(HTTPStatus.OK, data)
 
     return response_json(HTTPStatus.NOT_FOUND, None)
-
-
-def _upload_spreadsheet(is_update=False):
-    storage_service = SpreadsheetStorageService(SPREADSHEET_STORAGE_DIR)
-    importer = XlsImporter(app.ingest_api)
-    spreadsheet_upload_svc = SpreadsheetUploadService(app.ingest_api, storage_service, importer)
-
-    token = request.headers.get('Authorization')
-    request_file = request.files['file']
-    project_uuid = request.form.get('projectUuid')
-    submission_uuid = request.form.get('submissionUuid')
-
-    try:
-        logger.info('Uploading spreadsheet!')
-        submission_resource = spreadsheet_upload_svc.async_upload(token, request_file, is_update, project_uuid, submission_uuid)
-        logger.info(f'Created Submission: {submission_resource["_links"]["self"]["href"]}')
-    except SpreadsheetUploadError as error:
-        return response_json(error.http_code, {
-            "message": error.message,
-            "details": error.details,
-        })
-
-    except Exception as error:
-        logger.error(traceback.format_exc())
-        return response_json(500, {
-            "message": SPREADSHEET_UPLOAD_MESSAGE_ERROR,
-            "details": str(error),
-        })
-    else:
-        return _create_submission_success_response(submission_resource)
-
-
-def _create_submission_success_response(submission_resource):
-    submission_uuid = submission_resource['uuid']['uuid']
-    submission_url = submission_resource['_links']['self']['href']
-    submission_id = submission_url.rsplit('/', 1)[-1]
-
-    data = {
-        'message': SPREADSHEET_UPLOAD_MESSAGE,
-        'details': {
-            'submission_url': submission_url,
-            'submission_uuid': submission_uuid,
-            'submission_id': submission_id
-        }
-    }
-
-    return response_json(201, data)
-
-
-def response_json(status_code, data):
-    response = app.response_class(
-        response=json.dumps(data),
-        status=status_code,
-        mimetype='application/json'
-    )
-    return response
 
 
 if __name__ == '__main__':
