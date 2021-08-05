@@ -42,8 +42,8 @@ def get_submission_spreadsheet(submission_uuid):
             as_attachment=True,
             attachment_filename=spreadsheet_name)
     except SubmissionSpreadsheetDoesntExist as e:
-        err_msg = f'No spreadsheet found for submission with uuid {submission_uuid}. Missing path: {e.missing_path}'
-        response_msg = f'No spreadsheet found for submission with uuid {submission_uuid}'
+        response_msg = getattr(e, 'message', repr(e))
+        err_msg = f'{response_msg}. Missing path: {e.missing_path}'
         app.logger.warning(err_msg)
         return app.response_class(
             response={"message": response_msg},
