@@ -9,4 +9,4 @@ Unit Test:
     - apt-get update
     - apt-get install -y git
     - pip install -r requirements-dev.txt
-    - nosetests --ignore-files=integration/test_bulk_updates.py
+    - nosetests --ignore-files="test_bulk_updates\.py"
