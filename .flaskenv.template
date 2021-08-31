@@ -1,0 +1,17 @@
+# You can set this and other app environment variables such as `INGEST_API` in a `.flaskenv` file.
+# Just remove the `.template`
+# See more in [flask's docs](https://flask.palletsprojects.com/en/2.0.x/cli/#environment-variables-from-dotenv)
+
+# Flask configuration
+FLASK_APP=broker_app
+FLASK_RUN_PORT=5000
+FLASK_RUN_HOST=localhost
+# enable debug and auto code reloading
+FLASK_ENV=development
+
+
+# app configuration
+# use ingest dev api
+INGEST_API=https://api.ingest.dev.archive.data.humancellatlas.org/
+
+#SPREADSHEET_STORAGE_DIR=work/spreadsheets
