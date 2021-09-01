@@ -23,15 +23,11 @@ class BulkUpdateTest(TestCase):
     def setUp(self) -> None:
         # TODO add configuration to get ingest url from env variables
         # TODO currently it is hardcode for dev API
-        # TODO I am going to move this test to the integration test package
-        # TODO then all the above is going to be solved
 
         jwt_token = os.environ.get('JWT_TOKEN')
 
         if not jwt_token:
-            raise Exception('JWT token should be provided as an environment variable.')
-
-        jwt_token = 'Bearer ' + jwt_token
+            raise Exception('JWT token should be provided as an environment variable with the JWT_TOKEN variable.')
 
         self.ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
         self.ingest_api = IngestApi(self.ingest_url)
