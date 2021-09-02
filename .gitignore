@@ -92,6 +92,8 @@ venv.bak/
 
 .flaskenv
 
+/work/
+
 # Spyder project settings
 .spyderproject
 .spyproject
