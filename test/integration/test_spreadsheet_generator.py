@@ -232,16 +232,20 @@ class TestSpreadsheetGenerator(TestCase):
         self.assertEqual(df.iloc[2, 0], "project.project_core.project_short_name")
 
         # note: it is difficult to extend this test to multiple tabs (too many expected column names to list here). Any ideas/thoughts about how to extend it welcome.
-        expected_col_names = ["project.project_core.project_short_name", "project.project_core.project_title",
-                              "project.project_core.project_description",
-                              "project.estimated_cell_count",
-                              "project.data_use_restrictions.text",
-                              "project.data_use_restrictions.ontology",
-                              "project.data_use_restrictions.ontology_label",
-                              "project.supplementary_links", "project.insdc_project_accessions",
-                              "project.ega_accessions", "project.dbgap_accessions",
-                              "project.geo_series_accessions", "project.array_express_accessions",
-                              "project.insdc_study_accessions", "project.biostudies_accessions"]
+        expected_col_names = [
+            "project.project_core.project_short_name",
+            "project.project_core.project_title",
+            "project.project_core.project_description",
+            "project.supplementary_links",
+            "project.insdc_project_accessions",
+            "project.ega_accessions",
+            "project.dbgap_accessions",
+            "project.geo_series_accessions",
+            "project.array_express_accessions",
+            "project.insdc_study_accessions",
+            "project.biostudies_accessions",
+            "project.estimated_cell_count"
+        ]
         actual_col_names = list(df.iloc[2])
         self.assertEqual(expected_col_names, actual_col_names)
 
