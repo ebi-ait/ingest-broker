@@ -12,7 +12,8 @@ class ExportToSpreadsheetService:
 
     def export(self, submission_uuid: str):
         self.ingest_api.unset_token()
-        entity_list = self.data_collector.collect_data_by_submission_uuid(submission_uuid)
+        entity_dict = self.data_collector.collect_data_by_submission_uuid(submission_uuid)
+        entity_list = list(entity_dict.values())
         flattened_json = self.downloader.convert_json(entity_list)
         workbook = self.downloader.create_workbook(flattened_json)
         return workbook
