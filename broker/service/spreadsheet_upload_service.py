@@ -18,7 +18,11 @@ class SpreadsheetUploadService:
         self.storage_service = storage_service
         self.importer = importer
 
-    def async_upload(self, token, request_file, is_update, project_uuid=None, submission_uuid=None):
+    def async_upload(self, token, request_file, params):
+        project_uuid = params.get('projectUuid')
+        submission_uuid = params.get('submissionUuid')
+        is_update = params.get('isUpdate')
+
         self._validate_token_exists(token)
         submission_resource = self._create_or_get_submission(submission_uuid)
 

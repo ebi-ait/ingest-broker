@@ -1,3 +1,4 @@
+import json
 import traceback
 from dataclasses import dataclass
 
@@ -23,28 +24,22 @@ class UploadResponse:
 @upload_bp.route('/api_upload', methods=['POST'])
 @cross_origin()
 def upload_spreadsheet():
-    return _upload_spreadsheet()
-
-
-@upload_bp.route('/api_upload_update', methods=['POST'])
-@cross_origin()
-def upload_update_spreadsheet():
-    return _upload_spreadsheet(is_update=True)
-
-
-def _upload_spreadsheet(is_update=False):
     storage_service = SpreadsheetStorageService(current_app.SPREADSHEET_STORAGE_DIR)
     importer = XlsImporter(current_app.ingest_api)
     spreadsheet_upload_svc = SpreadsheetUploadService(current_app.ingest_api, storage_service, importer)
 
     token = request.headers.get('Authorization')
     request_file = request.files['file']
-    project_uuid = request.form.get('projectUuid')
-    submission_uuid = request.form.get('submissionUuid')
+    params_str = request.form.get('params')
+
+    if not params_str:
+        return response_json(400, UploadResponse(current_app.SPREADSHEET_UPLOAD_MESSAGE, 'Missing params'))
+
+    params = json.loads(params_str)
 
     try:
         current_app.logger.info('Uploading spreadsheet!')
-        submission_resource = spreadsheet_upload_svc.async_upload(token, request_file, is_update, project_uuid, submission_uuid)
+        submission_resource = spreadsheet_upload_svc.async_upload(token, request_file, params)
         current_app.logger.info(f'Created Submission: {submission_resource["_links"]["self"]["href"]}')
     except SpreadsheetUploadError as error:
         return response_json(error.http_code, UploadResponse(error.message, error.details))
@@ -62,11 +57,10 @@ def _create_submission_success_response(submission_resource):
     submission_id = submission_url.rsplit('/', 1)[-1]
 
     data = UploadResponse(current_app.SPREADSHEET_UPLOAD_MESSAGE,
-                           {
-                                'submission_url': submission_url,
-                                'submission_uuid': submission_uuid,
-                                'submission_id': submission_id
-                            })
+                          {
+                              'submission_url': submission_url,
+                              'submission_uuid': submission_uuid,
+                              'submission_id': submission_id
+                          })
 
     return response_json(201, data)
-
