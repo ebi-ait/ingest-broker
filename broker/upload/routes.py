@@ -36,6 +36,7 @@ def upload_spreadsheet():
         return response_json(400, UploadResponse(current_app.SPREADSHEET_UPLOAD_MESSAGE, 'Missing params'))
 
     params = json.loads(params_str)
+    current_app.logger.info(f'params: {params_str}')
 
     try:
         current_app.logger.info('Uploading spreadsheet!')
