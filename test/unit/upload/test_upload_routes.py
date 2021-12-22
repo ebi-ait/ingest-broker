@@ -27,7 +27,6 @@ class UploadSpreadsheetTestCase(TestCase):
                           mock_importer,
                           mock_storage_service,
                           mock_ingest):
-        # setup test data and dependencies
         mock_upload.return_value = {
             "_links": {"self": {"href": "xxx"}},
             "uuid": {"uuid": self.submission_uuid}
@@ -57,7 +56,6 @@ class UploadSpreadsheetTestCase(TestCase):
                                  mock_importer,
                                  mock_storage_service,
                                  mock_ingest):
-        # setup test data and dependencies
         mock_upload.return_value = {
             "_links": {"self": {"href": "xxx"}},
             "uuid": {"uuid": self.submission_uuid}
