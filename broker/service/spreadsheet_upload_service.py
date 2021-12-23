@@ -60,8 +60,7 @@ class SpreadsheetUploadService:
 
     def upload(self, submission_url, path, project_uuid=None):
         _LOGGER.info('Spreadsheet started!')
-        submission, template_manager = self.importer.import_file(path, submission_url, project_uuid=project_uuid)
-        self.importer.update_spreadsheet_with_uuids(submission, template_manager, path)
+        self.importer.import_file(path, submission_url, project_uuid=project_uuid)
         _LOGGER.info('Spreadsheet upload done!')
 
     def upload_updates(self, submission_url, path):
