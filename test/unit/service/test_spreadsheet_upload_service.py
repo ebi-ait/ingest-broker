@@ -25,7 +25,7 @@ class SpreadsheetUploadServiceTest(TestCase):
         self.spreadsheet_upload_service.upload('url', 'path')
 
         # then
-        self.importer.import_file.assert_called_with('path', 'url', project_uuid=None)
+        self.importer.import_file.assert_called_with('path', 'url', project_uuid=None, update_project=False)
         self.importer.update_spreadsheet_with_uuids.assert_called_with(self.mock_submission, self.mock_template_mgr, 'path')
 
     def test_upload_update_success(self):

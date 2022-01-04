@@ -18,7 +18,12 @@ class SpreadsheetUploadService:
         self.storage_service = storage_service
         self.importer = importer
 
-    def async_upload(self, token, request_file, is_update, project_uuid=None, submission_uuid=None):
+    def async_upload(self, token, request_file, params):
+        project_uuid = params.get('projectUuid')
+        submission_uuid = params.get('submissionUuid')
+        is_update = params.get('isUpdate')
+        update_project = params.get('updateProject')
+
         self._validate_token_exists(token)
         submission_resource = self._create_or_get_submission(submission_uuid)
 
@@ -31,7 +36,7 @@ class SpreadsheetUploadService:
             thread = threading.Thread(target=self.upload_updates, args=(submission_url, path))
         else:
             path = self.storage_service.store_submission_spreadsheet(submission_uuid, filename, request_file.read())
-            thread = threading.Thread(target=self.upload, args=(submission_url, path, project_uuid))
+            thread = threading.Thread(target=self.upload, args=(submission_url, path, project_uuid, update_project))
 
         thread.start()
 
@@ -58,9 +63,9 @@ class SpreadsheetUploadService:
             raise SpreadsheetUploadError(401, "An authentication token must be supplied when uploading a spreadsheet")
         self.ingest_api.set_token(token)
 
-    def upload(self, submission_url, path, project_uuid=None):
+    def upload(self, submission_url, path, project_uuid=None, update_project=False):
         _LOGGER.info('Spreadsheet started!')
-        submission, template_manager = self.importer.import_file(path, submission_url, project_uuid=project_uuid)
+        submission, template_manager = self.importer.import_file(path, submission_url, project_uuid=project_uuid, update_project=update_project)
         self.importer.update_spreadsheet_with_uuids(submission, template_manager, path)
         _LOGGER.info('Spreadsheet upload done!')
 
