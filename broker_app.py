@@ -12,6 +12,7 @@ from flask import Flask, request, redirect, send_file
 from flask import json
 from flask_cors import CORS, cross_origin
 from ingest.api.ingestapi import IngestApi
+from geo_to_hca.geo_to_hca import create_spreadsheet_using_geo_accession
 
 from broker.common.util import response_json
 from broker.service.schema_service import SchemaService
@@ -34,7 +35,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
 
 def create_app():
     app = Flask(__name__, static_folder='static')
-    app.SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
+    app.SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR') or 'abc'
     app.SPREADSHEET_UPLOAD_MESSAGE = "We’ve got your spreadsheet, and we’re currently importing and validating the data. \
 Nothing else for you to do - check back later."
 
@@ -191,6 +192,30 @@ def get_schemas():
         return response_json(HTTPStatus.OK, data)
 
     return response_json(HTTPStatus.NOT_FOUND, None)
+
+
+@cross_origin()
+@app.route("/spreadsheets")
+def get_spreadsheet_using_geo():
+    args = request.args
+    geo_accession = args.get('geo-accession')
+
+    workbook = create_spreadsheet_using_geo_accession(geo_accession)
+    print(workbook)
+
+    if workbook:
+        file_stream = io.BytesIO()
+        workbook.save(file_stream)
+        file_stream.seek(0)
+
+        return send_file(
+            file_stream,
+            attachment_filename=f"hca_metadata_spreadsheet-{geo_accession}.xlsx",
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            cache_timeout=0
+        )
+    return response_json(HTTPStatus.NOT_FOUND, "Unable to find HCA metadata against this accession")
 
 
 if __name__ == '__main__':
