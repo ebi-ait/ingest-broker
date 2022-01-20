@@ -35,7 +35,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
 
 def create_app():
     app = Flask(__name__, static_folder='static')
-    app.SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR') or 'abc'
+    app.SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
     app.SPREADSHEET_UPLOAD_MESSAGE = "We’ve got your spreadsheet, and we’re currently importing and validating the data. \
 Nothing else for you to do - check back later."
 
@@ -195,13 +195,12 @@ def get_schemas():
 
 
 @cross_origin()
-@app.route("/spreadsheets")
+@app.route("/spreadsheet")
 def get_spreadsheet_using_geo():
     args = request.args
     geo_accession = args.get('geo-accession')
 
     workbook = create_spreadsheet_using_geo_accession(geo_accession)
-    print(workbook)
 
     if workbook:
         file_stream = io.BytesIO()
