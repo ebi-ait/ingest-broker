@@ -22,18 +22,20 @@ def get_spreadsheet_using_geo():
     args = request.args
     geo_accession = args.get('accession')
 
-    workbook = create_spreadsheet_using_geo_accession(geo_accession)
+    try:
+        workbook = create_spreadsheet_using_geo_accession(geo_accession)
 
-    if workbook:
-        file_stream = io.BytesIO()
-        workbook.save(file_stream)
-        file_stream.seek(0)
+        if workbook:
+            file_stream = io.BytesIO()
+            workbook.save(file_stream)
+            file_stream.seek(0)
 
-        return send_file(
-            file_stream,
-            attachment_filename=f"hca_metadata_spreadsheet-{geo_accession}.xlsx",
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            cache_timeout=0
-        )
-    return response_json(HTTPStatus.NOT_FOUND, "Unable to find HCA metadata against this accession")
+            return send_file(
+                file_stream,
+                attachment_filename=f"hca_metadata_spreadsheet-{geo_accession}.xlsx",
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                as_attachment=True,
+                cache_timeout=0
+            )
+    except:
+        return response_json(HTTPStatus.NOT_FOUND, "Unable to find HCA metadata against this accession")
