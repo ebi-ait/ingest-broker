@@ -25,6 +25,7 @@ from broker.upload import upload_bp
 logging.getLogger('ingest').setLevel(logging.INFO)
 logging.getLogger('ingest.api.ingestapi').setLevel(logging.INFO)
 logging.getLogger('broker.service.spreadsheet_upload_service').setLevel(logging.INFO)
+logging.getLogger('broker.submissions.export_to_spreadsheet_service').setLevel(logging.INFO)
 
 format = ' %(asctime)s  - %(name)s - %(levelname)s in %(filename)s:' \
          '%(lineno)s %(funcName)s(): %(message)s'

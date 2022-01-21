@@ -1,11 +1,11 @@
 import io
-import tempfile
-import time
+from datetime import datetime
 
 import jsonpickle
 from flask import Blueprint, send_file
 from flask import current_app as app
 
+from broker.common.util import response_json
 from broker.service.spreadsheet_storage import SubmissionSpreadsheetDoesntExist
 from broker.service.spreadsheet_storage import SpreadsheetStorageService
 from broker.service.summary_service import SummaryService
@@ -16,23 +16,46 @@ submissions_bp = Blueprint(
 )
 
 
-@submissions_bp.route('/<submission_uuid>/spreadsheet', methods=['GET'])
+@submissions_bp.route('/<submission_uuid>/spreadsheet', methods=['POST'])
 def export_to_spreadsheet(submission_uuid):
-    workbook = ExportToSpreadsheetService(app.ingest_api).export(submission_uuid)
-    timestamp = time.strftime("%Y%m%d-%H%M%S")
-    temp_file = tempfile.NamedTemporaryFile()
-    filename = f'{submission_uuid}_{timestamp}.xlsx'
-    workbook.save(temp_file.name)
-    return send_file(temp_file.name,
-                     as_attachment=True,
-                     cache_timeout=0,
-                     attachment_filename=filename)
+    submission = app.ingest_api.get_submission_by_uuid(submission_uuid)
+    spreadsheet_job = submission.get('lastSpreadsheetDownloadJob', {})
+
+    if not spreadsheet_job.get('createdDate') or (
+            spreadsheet_job.get('createdDate') and spreadsheet_job.get('finishedDate')):
+        spreadsheet_export_service = ExportToSpreadsheetService(app.ingest_api)
+        spreadsheet_export_service.async_export(submission_uuid, app.SPREADSHEET_STORAGE_DIR)
+        return response_json(202, {})
+    else:
+        return response_json(400, {'message': 'Generation ongoing!'})
+
+
+@submissions_bp.route('/<submission_uuid>/spreadsheet', methods=['GET'])
+def download_spreadsheet(submission_uuid):
+    submission = app.ingest_api.get_submission_by_uuid(submission_uuid)
+    spreadsheet_job = submission.get('lastSpreadsheetDownloadJob', {})
+    if spreadsheet_job.get('finishedDate'):
+        spreadsheet_job.get('createdDate')
+        create_date = datetime.strptime(spreadsheet_job.get('createdDate'), "%Y-%m-%dT%H:%M:%S.%fZ")
+        timestamp = create_date.strftime("%Y%m%d-%H%M%S")
+        directory = f'{app.SPREADSHEET_STORAGE_DIR}/{submission_uuid}'
+        filename = f'{submission_uuid}_{timestamp}.xlsx'
+        filepath = f'{directory}/downloads/{filename}'
+        return send_file(filepath,
+                         as_attachment=True,
+                         cache_timeout=0,
+                         attachment_filename=filename)
+    elif spreadsheet_job.get('createdDate'):
+        response_json(401, {'message': 'The spreadsheet is not generated yet'})
+    else:
+        response_json(401, {'message': 'The spreadsheet is being generated'})
 
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet/original', methods=['GET'])
 def get_submission_spreadsheet(submission_uuid):
     try:
-        spreadsheet = SpreadsheetStorageService(app.SPREADSHEET_STORAGE_DIR).retrieve_submission_spreadsheet(submission_uuid)
+        spreadsheet = SpreadsheetStorageService(app.SPREADSHEET_STORAGE_DIR).retrieve_submission_spreadsheet(
+            submission_uuid)
         spreadsheet_name = spreadsheet["name"]
         spreadsheet_blob = spreadsheet["blob"]
 
