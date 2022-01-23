@@ -1,6 +1,6 @@
 # --- core imports
 from http import HTTPStatus
-import io
+import tempfile
 
 # --- application imports
 from broker.common.util import response_json
@@ -8,8 +8,7 @@ from broker.common.util import response_json
 # --- third-party imports
 from flask import Blueprint, send_file, request
 from flask_cors import cross_origin
-from geo_to_hca.geo_to_hca import create_spreadsheet_using_geo_accession
-
+from geo_to_hca import geo_to_hca
 
 geo_accession_bp = Blueprint(
     'geo_accession', __name__, url_prefix='/geo-accession'
@@ -23,19 +22,17 @@ def get_spreadsheet_using_geo():
     geo_accession = args.get('accession')
 
     try:
-        workbook = create_spreadsheet_using_geo_accession(geo_accession)
+        workbook = geo_to_hca.create_spreadsheet_using_geo_accession(geo_accession)
 
         if workbook:
-            file_stream = io.BytesIO()
-            workbook.save(file_stream)
-            file_stream.seek(0)
+            temp_file = tempfile.NamedTemporaryFile()
+            filename = f"hca_metadata_spreadsheet-{geo_accession}.xlsx"
+            workbook.save(temp_file.name)
 
-            return send_file(
-                file_stream,
-                attachment_filename=f"hca_metadata_spreadsheet-{geo_accession}.xlsx",
-                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                as_attachment=True,
-                cache_timeout=0
-            )
-    except:
-        return response_json(HTTPStatus.NOT_FOUND, "Unable to find HCA metadata against this accession")
+            return send_file(temp_file.name,
+                             as_attachment=True,
+                             cache_timeout=0,
+                             attachment_filename=filename)
+
+    except Exception:
+        return response_json(HTTPStatus.INTERNAL_SERVER_ERROR, "Unable to find HCA metadata against given accession")
