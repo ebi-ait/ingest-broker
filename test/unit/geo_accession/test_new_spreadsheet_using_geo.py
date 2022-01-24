@@ -4,13 +4,29 @@ from unittest.mock import patch, MagicMock
 from broker_app import app as _app
 
 
-class ExportToSpreadsheetUsingGeoTestCase(TestCase):
+class GetSpreadsheetUsingGeoTestCase(TestCase):
 
     def setUp(self):
         _app.testing = True
 
-    @patch('broker.geo_accession.routes.geo_to_hca.create_spreadsheet_using_geo_accession')
-    def test_export_spreadsheet_using_geo(self, mock_create_spreadsheet_using_geo_accession):
+
+    @patch('broker.import_geo.routes.geo_to_hca.create_spreadsheet_using_geo_accession')
+    def test_get_spreadsheet_using_invalid_geo(self, mock_create_spreadsheet_using_geo_accession):
+        # given
+        mock_workbook = MagicMock()
+        mock_create_spreadsheet_using_geo_accession.return_value = mock_workbook
+        geo_accession = 'NoAccessionHere'
+
+        with _app.test_client() as app:
+            # when
+            response = app.post(f'import-geo?accession={geo_accession}')
+
+            # then
+            mock_create_spreadsheet_using_geo_accession.assert_not_called()
+            self.assertEqual(400, response.status_code)
+
+    @patch('broker.import_geo.routes.geo_to_hca.create_spreadsheet_using_geo_accession')
+    def test_get_spreadsheet_using_geo(self, mock_create_spreadsheet_using_geo_accession):
         # given
         mock_workbook = MagicMock()
         mock_create_spreadsheet_using_geo_accession.return_value = mock_workbook
@@ -18,7 +34,7 @@ class ExportToSpreadsheetUsingGeoTestCase(TestCase):
 
         with _app.test_client() as app:
             # when
-            response = app.get(f'geo-accession/spreadsheet?accession={geo_accession}')
+            response = app.post(f'import-geo?accession={geo_accession}')
 
             # then
             mock_create_spreadsheet_using_geo_accession.assert_called_with(geo_accession)

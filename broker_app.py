@@ -21,7 +21,7 @@ from broker.service.spreadsheet_generation.spreadsheet_job_manager import Spread
 from broker.service.summary_service import SummaryService
 from broker.submissions import submissions_bp
 from broker.upload import upload_bp
-from broker.geo_accession.routes import geo_accession_bp
+from broker.import_geo.routes import import_geo_bp
 
 logging.getLogger('ingest').setLevel(logging.INFO)
 logging.getLogger('ingest.api.ingestapi').setLevel(logging.INFO)
@@ -51,7 +51,7 @@ Nothing else for you to do - check back later."
 
     app.register_blueprint(upload_bp)
     app.register_blueprint(submissions_bp)
-    app.register_blueprint(geo_accession_bp)
+    app.register_blueprint(import_geo_bp)
 
     return app
 
