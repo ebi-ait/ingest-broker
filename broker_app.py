@@ -52,7 +52,6 @@ Nothing else for you to do - check back later."
     app.register_blueprint(upload_bp)
     app.register_blueprint(submissions_bp)
     app.register_blueprint(import_geo_bp)
-
     return app
 
 
