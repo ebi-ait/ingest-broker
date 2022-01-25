@@ -26,7 +26,7 @@ class GetSpreadsheetUsingGeoTestCase(TestCase):
             self.assertEqual(400, response.status_code)
 
     @patch('broker.import_geo.routes.geo_to_hca.create_spreadsheet_using_geo_accession')
-    def test_get_spreadsheet_using_geo(self, mock_create_spreadsheet_using_geo_accession):
+    def test_get_spreadsheet_using_valid_geo(self, mock_create_spreadsheet_using_geo_accession):
         # given
         mock_workbook = MagicMock()
         mock_create_spreadsheet_using_geo_accession.return_value = mock_workbook
