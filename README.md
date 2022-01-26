@@ -63,3 +63,7 @@ docker run -p 5000:5000 -e INGEST_API=http://api.ingest.dev.data.humancellatlas.
 ```
 
 The application will be available at http://localhost:5000
+
+# Docs
+
+see [design docs](doc/)
