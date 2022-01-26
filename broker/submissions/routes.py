@@ -1,9 +1,10 @@
 import io
-from datetime import datetime
+from http import HTTPStatus
 
 import jsonpickle
 from flask import Blueprint, send_file
 from flask import current_app as app
+from ingest.utils.date import parse_date_string
 
 from broker.common.util import response_json
 from broker.service.spreadsheet_storage import SubmissionSpreadsheetDoesntExist
@@ -17,26 +18,27 @@ submissions_bp = Blueprint(
 
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet', methods=['POST'])
-def export_to_spreadsheet(submission_uuid):
+def generate_spreadsheet(submission_uuid):
     submission = app.ingest_api.get_submission_by_uuid(submission_uuid)
-    spreadsheet_job = submission.get('lastSpreadsheetDownloadJob', {})
+    spreadsheet_job = submission.get('lastSpreadsheetDownloadJob', {}) or {}
 
+    message = 'The spreadsheet is being generated.'
     if not spreadsheet_job.get('createdDate') or (
             spreadsheet_job.get('createdDate') and spreadsheet_job.get('finishedDate')):
         spreadsheet_export_service = ExportToSpreadsheetService(app.ingest_api)
         spreadsheet_export_service.async_export(submission_uuid, app.SPREADSHEET_STORAGE_DIR)
-        return response_json(202, {})
+        return response_json(HTTPStatus.ACCEPTED, {'message': message})
     else:
-        return response_json(400, {'message': 'Generation ongoing!'})
+        return response_json(HTTPStatus.ACCEPTED, {'message': message})
 
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet', methods=['GET'])
 def download_spreadsheet(submission_uuid):
     submission = app.ingest_api.get_submission_by_uuid(submission_uuid)
-    spreadsheet_job = submission.get('lastSpreadsheetDownloadJob', {})
-    if spreadsheet_job.get('finishedDate'):
+    spreadsheet_job = submission.get('lastSpreadsheetDownloadJob', {}) or {}
+    if spreadsheet_job.get('finishedDate', {}):
         spreadsheet_job.get('createdDate')
-        create_date = datetime.strptime(spreadsheet_job.get('createdDate'), "%Y-%m-%dT%H:%M:%S.%fZ")
+        create_date = parse_date_string(spreadsheet_job.get('createdDate'))
         timestamp = create_date.strftime("%Y%m%d-%H%M%S")
         directory = f'{app.SPREADSHEET_STORAGE_DIR}/{submission_uuid}'
         filename = f'{submission_uuid}_{timestamp}.xlsx'
@@ -46,9 +48,9 @@ def download_spreadsheet(submission_uuid):
                          cache_timeout=0,
                          attachment_filename=filename)
     elif spreadsheet_job.get('createdDate'):
-        response_json(401, {'message': 'The spreadsheet is not generated yet'})
+        response_json(HTTPStatus.NOT_FOUND, {'message': 'There spreadsheet should be generated first.'})
     else:
-        response_json(401, {'message': 'The spreadsheet is being generated'})
+        response_json(HTTPStatus.ACCEPTED, {'message': 'The spreadsheet is being generated.'})
 
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet/original', methods=['GET'])
@@ -70,7 +72,7 @@ def get_submission_spreadsheet(submission_uuid):
         app.logger.warning(err_msg)
         return app.response_class(
             response={"message": response_msg},
-            status=404,
+            status=HTTPStatus.NOT_FOUND,
             mimetype='application/json'
         )
 
@@ -82,6 +84,6 @@ def submission_summary(submission_uuid):
 
     return app.response_class(
         response=jsonpickle.encode(summary, unpicklable=False),
-        status=200,
+        status=HTTPStatus.OK,
         mimetype='application/json'
     )
