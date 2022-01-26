@@ -26,7 +26,7 @@ def generate_spreadsheet(submission_uuid):
     if not spreadsheet_job.get('createdDate') or (
             spreadsheet_job.get('createdDate') and spreadsheet_job.get('finishedDate')):
         spreadsheet_export_service = ExportToSpreadsheetService(app.ingest_api)
-        spreadsheet_export_service.async_export(submission_uuid, app.SPREADSHEET_STORAGE_DIR)
+        spreadsheet_export_service.async_export_and_save(submission_uuid, app.SPREADSHEET_STORAGE_DIR)
         return response_json(HTTPStatus.ACCEPTED, {'message': message})
     else:
         return response_json(HTTPStatus.ACCEPTED, {'message': message})

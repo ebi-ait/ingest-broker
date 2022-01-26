@@ -26,7 +26,7 @@ class ExportToSpreadsheetService:
         return workbook
 
     def export_and_save(self, submission_uuid: str, storage_dir: str):
-        self.logger.info(f'Exporting spreadsheet for submission {submission_uuid}')
+        self.logger.info(f'Exporting submission {submission_uuid}')
         try:
             submission = self.ingest_api.get_submission_by_uuid(submission_uuid)
             submission_url = submission['_links']['self']['href']
@@ -50,11 +50,16 @@ class ExportToSpreadsheetService:
         os.makedirs(f'{directory}/downloads/', exist_ok=True)
         workbook.save(filepath)
 
-        patch['lastSpreadsheetDownloadJob']['finishedDate'] = datetime.now(timezone.utc).isoformat().replace("+00:00",
-                                                                                                             "Z")
+        patch = {
+            'lastSpreadsheetDownloadJob': {
+                'finishedDate': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                'createdDate': create_date.isoformat().replace("+00:00", "Z")
+            }
+        }
+
         self.ingest_api.patch(submission_url, patch)
         self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
 
-    def async_export(self, submission_uuid: str, storage_dir: str):
+    def async_export_and_save(self, submission_uuid: str, storage_dir: str):
         thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
         thread.start()
