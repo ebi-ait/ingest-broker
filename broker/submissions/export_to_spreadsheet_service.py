@@ -35,30 +35,32 @@ class ExportToSpreadsheetService:
             raise Exception(f'An error occurred in retrieving the submission with uuid {submission_uuid}: {str(e)}')
 
         create_date = datetime.now(timezone.utc)
-        patch = {
-            'lastSpreadsheetDownloadJob': {
-                'finishedDate': None,
-                'createdDate': create_date.isoformat().replace("+00:00", "Z")
-            }
-        }
-        self.ingest_api.patch(submission_url, patch)
-        timestamp = create_date.strftime("%Y%m%d-%H%M%S")
-        workbook = self.export(submission_uuid)
+
+        self._patch(submission_url, create_date)
+
         directory = f'{storage_dir}/{submission_uuid}'
+        os.makedirs(f'{directory}/downloads/', exist_ok=True)
+
+        timestamp = create_date.strftime("%Y%m%d-%H%M%S")
         filename = f'{submission_uuid}_{timestamp}.xlsx'
         filepath = f'{directory}/downloads/{filename}'
-        os.makedirs(f'{directory}/downloads/', exist_ok=True)
+
+        workbook = self.export(submission_uuid)
         workbook.save(filepath)
 
+        finished_date = datetime.now(timezone.utc)
+        self._patch(submission_url, create_date, finished_date)
+
+        self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
+
+    def _patch(self, submission_url, create_date, finished_date=None):
         patch = {
             'lastSpreadsheetDownloadJob': {
-                'finishedDate': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                'finishedDate': finished_date.isoformat().replace("+00:00", "Z") if finished_date else None,
                 'createdDate': create_date.isoformat().replace("+00:00", "Z")
             }
         }
-
         self.ingest_api.patch(submission_url, patch)
-        self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
 
     def async_export_and_save(self, submission_uuid: str, storage_dir: str):
         thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
