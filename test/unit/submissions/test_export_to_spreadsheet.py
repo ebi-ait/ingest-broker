@@ -11,7 +11,7 @@ class ExportToSpreadsheetTestCase(TestCase):
     @patch('broker_app.IngestApi')
     @patch('broker_app.SchemaService')
     @patch('broker_app.SpreadsheetGenerator')
-    def setUp(self, xls_generator, schema_service, mock_ingest_api_constructor, ):
+    def setUp(self, xls_generator, schema_service, mock_ingest_api_constructor):
         self.mock_ingest = Mock()
         mock_ingest_api_constructor.return_value = self.mock_ingest
         self._app = create_app()
