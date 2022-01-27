@@ -23,8 +23,7 @@ def generate_spreadsheet(submission_uuid):
     spreadsheet_job = submission.get('lastSpreadsheetDownloadJob', {}) or {}
 
     message = 'The spreadsheet is being generated.'
-    if not spreadsheet_job.get('createdDate') or (
-            spreadsheet_job.get('createdDate') and spreadsheet_job.get('finishedDate')):
+    if not spreadsheet_job.get('createdDate') or (spreadsheet_job.get('createdDate') and spreadsheet_job.get('finishedDate')):
         spreadsheet_export_service = ExportToSpreadsheetService(app.ingest_api)
         spreadsheet_export_service.async_export_and_save(submission_uuid, app.SPREADSHEET_STORAGE_DIR)
         return response_json(HTTPStatus.ACCEPTED, {'message': message})
@@ -48,9 +47,10 @@ def download_spreadsheet(submission_uuid):
                          cache_timeout=0,
                          attachment_filename=filename)
     elif spreadsheet_job.get('createdDate'):
-        response_json(HTTPStatus.NOT_FOUND, {'message': 'There spreadsheet should be generated first.'})
+        return response_json(HTTPStatus.ACCEPTED, {'message': 'The spreadsheet is being generated.'})
     else:
-        response_json(HTTPStatus.ACCEPTED, {'message': 'The spreadsheet is being generated.'})
+        return response_json(HTTPStatus.NOT_FOUND, {'message': 'There spreadsheet should be generated first.'})
+
 
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet/original', methods=['GET'])
