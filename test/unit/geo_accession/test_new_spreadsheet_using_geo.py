@@ -1,7 +1,7 @@
 import unittest
 from unittest import TestCase
 from unittest.mock import patch, MagicMock, Mock
-from broker_app import app as _app, create_app
+from broker_app import create_app
 
 
 class GetSpreadsheetUsingGeoTestCase(TestCase):
