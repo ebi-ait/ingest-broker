@@ -20,7 +20,7 @@ submissions_bp = Blueprint(
 @submissions_bp.route('/<submission_uuid>/spreadsheet', methods=['POST'])
 def generate_spreadsheet(submission_uuid):
     submission = app.ingest_api.get_submission_by_uuid(submission_uuid)
-    spreadsheet_job = submission.get('lastSpreadsheetDownloadJob', {}) or {}
+    spreadsheet_job = submission.get('lastSpreadsheetGenerationJob', {}) or {}
 
     message = 'The spreadsheet is being generated.'
     if not spreadsheet_job.get('createdDate') or (spreadsheet_job.get('createdDate') and spreadsheet_job.get('finishedDate')):
@@ -34,7 +34,7 @@ def generate_spreadsheet(submission_uuid):
 @submissions_bp.route('/<submission_uuid>/spreadsheet', methods=['GET'])
 def download_spreadsheet(submission_uuid):
     submission = app.ingest_api.get_submission_by_uuid(submission_uuid)
-    spreadsheet_job = submission.get('lastSpreadsheetDownloadJob', {}) or {}
+    spreadsheet_job = submission.get('lastSpreadsheetGenerationJob', {}) or {}
     if spreadsheet_job.get('finishedDate', {}):
         create_date = parse_date_string(spreadsheet_job.get('createdDate'))
         timestamp = create_date.strftime("%Y%m%d-%H%M%S")

@@ -19,7 +19,7 @@ class ExportToSpreadsheetTestCase(TestCase):
         self._app.testing = True
 
         self.mock_submission = {
-            'lastSpreadsheetDownloadJob': {
+            'lastSpreadsheetGenerationJob': {
                 'finishedDate': '2022-01-27T12:00:58.417Z',
                 'createdDate': '2022-01-27T11:57:05.187Z'
             }
@@ -66,7 +66,7 @@ class ExportToSpreadsheetTestCase(TestCase):
     def test_download_spreadsheet__accepted(self, mock_export, mock_send_file):
         # given
         self.mock_submission = {
-            'lastSpreadsheetDownloadJob': {
+            'lastSpreadsheetGenerationJob': {
                 'finishedDate': None,
                 'createdDate': '2022-01-27T11:57:05.187Z'
             }
@@ -88,7 +88,7 @@ class ExportToSpreadsheetTestCase(TestCase):
     def test_generate_spreadsheet__accepted__finished(self, mock_export):
         # given
         self.mock_submission = {
-            'lastSpreadsheetDownloadJob': {
+            'lastSpreadsheetGenerationJob': {
                 'createdDate': '2022-01-27T11:57:05.187Z',
                 'finishedDate': '2022-01-27T12:00:58.417Z'
             }
@@ -109,7 +109,7 @@ class ExportToSpreadsheetTestCase(TestCase):
     def test_generate_spreadsheet__accepted__not_created(self, mock_export):
         # given
         self.mock_submission = {
-            'lastSpreadsheetDownloadJob': None
+            'lastSpreadsheetGenerationJob': None
         }
         self.mock_ingest.get_submission_by_uuid = Mock(return_value=self.mock_submission)
         submission_id = 'xyz-001'
@@ -126,7 +126,7 @@ class ExportToSpreadsheetTestCase(TestCase):
     def test_generate_spreadsheet__accepted__already_created(self, mock_export):
         # given
         self.mock_submission = {
-            'lastSpreadsheetDownloadJob': {
+            'lastSpreadsheetGenerationJob': {
                 'createdDate': '2022-01-27T11:57:05.187Z',
                 'finishedDate': None
             }

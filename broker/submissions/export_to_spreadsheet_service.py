@@ -55,7 +55,7 @@ class ExportToSpreadsheetService:
 
     def _patch(self, submission_url, create_date, finished_date=None):
         patch = {
-            'lastSpreadsheetDownloadJob': {
+            'lastSpreadsheetGenerationJob': {
                 'finishedDate': finished_date.isoformat().replace("+00:00", "Z") if finished_date else None,
                 'createdDate': create_date.isoformat().replace("+00:00", "Z")
             }
