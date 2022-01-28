@@ -89,8 +89,8 @@ class ExportToSpreadsheetTestCase(TestCase):
         # given
         self.mock_submission = {
             'lastSpreadsheetDownloadJob': {
-                'finishedDate': '2022-01-27T12:00:58.417Z',
-                'createdDate': '2022-01-27T11:57:05.187Z'
+                'createdDate': '2022-01-27T11:57:05.187Z',
+                'finishedDate': '2022-01-27T12:00:58.417Z'
             }
         }
         self.mock_ingest.get_submission_by_uuid = Mock(return_value=self.mock_submission)
@@ -121,6 +121,26 @@ class ExportToSpreadsheetTestCase(TestCase):
             # then
             self.assertEqual(response.status_code, HTTPStatus.ACCEPTED)
             mock_export.assert_called_once()
+
+    @patch('broker.submissions.ExportToSpreadsheetService.async_export_and_save')
+    def test_generate_spreadsheet__accepted__already_created(self, mock_export):
+        # given
+        self.mock_submission = {
+            'lastSpreadsheetDownloadJob': {
+                'createdDate': '2022-01-27T11:57:05.187Z',
+                'finishedDate': None
+            }
+        }
+        self.mock_ingest.get_submission_by_uuid = Mock(return_value=self.mock_submission)
+        submission_id = 'xyz-001'
+
+        with self._app.test_client() as app:
+            # when
+            response = app.post(f'/submissions/{submission_id}/spreadsheet')
+
+            # then
+            self.assertEqual(response.status_code, HTTPStatus.ACCEPTED)
+            mock_export.assert_not_called()
 
 
 if __name__ == '__main__':

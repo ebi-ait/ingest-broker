@@ -49,8 +49,7 @@ def download_spreadsheet(submission_uuid):
     elif spreadsheet_job.get('createdDate'):
         return response_json(HTTPStatus.ACCEPTED, {'message': 'The spreadsheet is being generated.'})
     else:
-        return response_json(HTTPStatus.NOT_FOUND, {'message': 'There spreadsheet should be generated first.'})
-
+        return response_json(HTTPStatus.NOT_FOUND, {'message': 'The spreadsheet should be generated first.'})
 
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet/original', methods=['GET'])
