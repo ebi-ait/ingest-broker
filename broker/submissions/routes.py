@@ -36,7 +36,6 @@ def download_spreadsheet(submission_uuid):
     submission = app.ingest_api.get_submission_by_uuid(submission_uuid)
     spreadsheet_job = submission.get('lastSpreadsheetDownloadJob', {}) or {}
     if spreadsheet_job.get('finishedDate', {}):
-        spreadsheet_job.get('createdDate')
         create_date = parse_date_string(spreadsheet_job.get('createdDate'))
         timestamp = create_date.strftime("%Y%m%d-%H%M%S")
         directory = f'{app.SPREADSHEET_STORAGE_DIR}/{submission_uuid}'
