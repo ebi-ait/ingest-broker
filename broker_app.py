@@ -36,7 +36,7 @@ def add_routes(app):
             return redirect(new_ui_url, code=302)
         return app.response_class(
             response=json.dumps({'message': "Ingest Broker API is running!"}),
-            status=200,
+            status= HTTPStatus.OK,
             mimetype='application/json'
         )
 
