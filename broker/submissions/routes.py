@@ -23,12 +23,20 @@ def generate_spreadsheet(submission_uuid):
     spreadsheet_job = submission.get('lastSpreadsheetGenerationJob', {}) or {}
 
     message = 'The spreadsheet is being generated.'
-    if not spreadsheet_job.get('createdDate') or (spreadsheet_job.get('createdDate') and spreadsheet_job.get('finishedDate')):
+    if job_not_created(spreadsheet_job) or job_finished(spreadsheet_job):
         spreadsheet_export_service = ExportToSpreadsheetService(app.ingest_api)
         spreadsheet_export_service.async_export_and_save(submission_uuid, app.SPREADSHEET_STORAGE_DIR)
         return response_json(HTTPStatus.ACCEPTED, {'message': message})
     else:
         return response_json(HTTPStatus.ACCEPTED, {'message': message})
+
+
+def job_finished(spreadsheet_job):
+    return spreadsheet_job.get('createdDate') and spreadsheet_job.get('finishedDate')
+
+
+def job_not_created(spreadsheet_job):
+    return not spreadsheet_job.get('createdDate')
 
 
 @submissions_bp.route('/<submission_uuid>/spreadsheet', methods=['GET'])
