@@ -40,12 +40,12 @@ class ExportToSpreadsheetService:
 
         self._patch(submission_url, create_date)
 
-        file = self.get_spreadsheet_details(create_date, storage_dir, submission_uuid)
+        spreadsheet_details = self.get_spreadsheet_details(create_date, storage_dir, submission_uuid)
 
         workbook = self.export(submission_uuid)
 
-        os.makedirs(file.directory, exist_ok=True)
-        workbook.save(file.filepath)
+        os.makedirs(spreadsheet_details.directory, exist_ok=True)
+        workbook.save(spreadsheet_details.filepath)
 
         finished_date = datetime.now(timezone.utc)
         self._patch(submission_url, create_date, finished_date)
@@ -59,9 +59,9 @@ class ExportToSpreadsheetService:
         filename = f'{submission_uuid}_{timestamp}.xlsx'
         filepath = f'{directory}/{filename}'
 
-        SpreadsheetDetail = namedtuple("File", "filename filepath directory")
-        xls = SpreadsheetDetail(filename, filepath, directory)
-        return xls
+        SpreadsheetDetails = namedtuple("File", "filename filepath directory")
+        details = SpreadsheetDetails(filename, filepath, directory)
+        return details
 
     def _patch(self, submission_url, create_date, finished_date=None):
         patch = {
