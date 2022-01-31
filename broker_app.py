@@ -22,7 +22,8 @@ from broker.submissions import submissions_bp
 from broker.upload import upload_bp
 from broker.import_geo.routes import import_geo_bp
 
-with open('logging-config.json', 'rt') as config_file:
+script_dir = os.path.dirname(os.path.realpath(__file__))
+with open(f'{script_dir}/logging-config.json', 'rt') as config_file:
     config = json.load(config_file)
     logging.config.dictConfig(config)
 
