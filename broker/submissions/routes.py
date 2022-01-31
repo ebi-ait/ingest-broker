@@ -45,14 +45,13 @@ def download_spreadsheet(submission_uuid):
     spreadsheet_job = submission.get('lastSpreadsheetGenerationJob', {}) or {}
     if spreadsheet_job.get('finishedDate', {}):
         create_date = parse_date_string(spreadsheet_job.get('createdDate'))
-        timestamp = create_date.strftime("%Y%m%d-%H%M%S")
-        directory = f'{app.SPREADSHEET_STORAGE_DIR}/{submission_uuid}'
-        filename = f'{submission_uuid}_{timestamp}.xlsx'
-        filepath = f'{directory}/downloads/{filename}'
-        return send_file(filepath,
+        spreadsheet = ExportToSpreadsheetService.get_spreadsheet_details(create_date,
+                                                                         app.SPREADSHEET_STORAGE_DIR,
+                                                                         submission_uuid)
+        return send_file(spreadsheet.filepath,
                          as_attachment=True,
                          cache_timeout=0,
-                         attachment_filename=filename)
+                         attachment_filename=spreadsheet.filename)
     elif spreadsheet_job.get('createdDate'):
         return response_json(HTTPStatus.ACCEPTED, {'message': 'The spreadsheet is being generated.'})
     else:

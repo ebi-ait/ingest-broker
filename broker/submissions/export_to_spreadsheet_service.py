@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import threading
+from collections import namedtuple
 from datetime import datetime, timezone
 
 from ingest.api.ingestapi import IngestApi
@@ -39,20 +40,28 @@ class ExportToSpreadsheetService:
 
         self._patch(submission_url, create_date)
 
-        directory = f'{storage_dir}/{submission_uuid}'
-        os.makedirs(f'{directory}/downloads/', exist_ok=True)
-
-        timestamp = create_date.strftime("%Y%m%d-%H%M%S")
-        filename = f'{submission_uuid}_{timestamp}.xlsx'
-        filepath = f'{directory}/downloads/{filename}'
+        file = self.get_spreadsheet_details(create_date, storage_dir, submission_uuid)
 
         workbook = self.export(submission_uuid)
-        workbook.save(filepath)
+
+        os.makedirs(file.directory, exist_ok=True)
+        workbook.save(file.filepath)
 
         finished_date = datetime.now(timezone.utc)
         self._patch(submission_url, create_date, finished_date)
 
         self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
+
+    @staticmethod
+    def get_spreadsheet_details(create_date, storage_dir, submission_uuid):
+        directory = f'{storage_dir}/{submission_uuid}/downloads/'
+        timestamp = create_date.strftime("%Y%m%d-%H%M%S")
+        filename = f'{submission_uuid}_{timestamp}.xlsx'
+        filepath = f'{directory}/{filename}'
+
+        SpreadsheetDetail = namedtuple("File", "filename filepath directory")
+        xls = SpreadsheetDetail(filename, filepath, directory)
+        return xls
 
     def _patch(self, submission_url, create_date, finished_date=None):
         patch = {
