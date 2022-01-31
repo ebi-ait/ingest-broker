@@ -35,7 +35,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format=format)
 
 
-def define_app(app):
+def add_routes(app):
     @app.route('/', methods=['GET'])
     def index():
         new_ui_url = os.environ.get('INGEST_UI')
@@ -189,10 +189,10 @@ Nothing else for you to do - check back later."
     app.register_blueprint(submissions_bp)
     app.register_blueprint(import_geo_bp)
 
-    define_app(app)
+    add_routes(app)
     return app
 
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host='0.0.0.0', port=5000)
