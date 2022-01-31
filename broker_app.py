@@ -2,9 +2,8 @@
 
 import io
 import json
-import logging
+import logging.config
 import os
-import sys
 from http import HTTPStatus
 
 import jsonpickle
@@ -23,16 +22,9 @@ from broker.submissions import submissions_bp
 from broker.upload import upload_bp
 from broker.import_geo.routes import import_geo_bp
 
-logging.getLogger('ingest').setLevel(logging.INFO)
-logging.getLogger('ingest.api.ingestapi').setLevel(logging.INFO)
-logging.getLogger('broker.service.spreadsheet_upload_service').setLevel(logging.INFO)
-logging.getLogger('broker.submissions.export_to_spreadsheet_service').setLevel(logging.INFO)
-logging.getLogger('geo_to_hca').setLevel(logging.INFO)
-
-format = ' %(asctime)s  - %(name)s - %(levelname)s in %(filename)s:' \
-         '%(lineno)s %(funcName)s(): %(message)s'
-logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                    format=format)
+with open('logging-config.json', 'rt') as config_file:
+    config = json.load(config_file)
+    logging.config.dictConfig(config)
 
 
 def add_routes(app):
