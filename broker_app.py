@@ -86,7 +86,7 @@ def add_routes(app):
                         }
                     }
                 }, unpicklable=False),
-                status=202,
+                status=HTTPStatus.ACCEPTED,
                 mimetype='application/hal+json'
             )
         elif job_spec.status == JobStatus.COMPLETE:
