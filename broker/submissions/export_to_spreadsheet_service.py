@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from ingest.api.ingestapi import IngestApi
 from ingest.downloader.data_collector import DataCollector
 from ingest.downloader.downloader import XlsDownloader
+from ingest.utils.date import date_to_json_string
 
 
 class ExportToSpreadsheetService:
@@ -56,8 +57,8 @@ class ExportToSpreadsheetService:
     def _patch(self, submission_url, create_date, finished_date=None):
         patch = {
             'lastSpreadsheetGenerationJob': {
-                'finishedDate': finished_date.isoformat().replace("+00:00", "Z") if finished_date else None,
-                'createdDate': create_date.isoformat().replace("+00:00", "Z")
+                'finishedDate': date_to_json_string(finished_date) if finished_date else None,
+                'createdDate': date_to_json_string(create_date)
             }
         }
         self.ingest_api.patch(submission_url, patch)
