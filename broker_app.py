@@ -102,7 +102,7 @@ def add_routes(app):
                 response=jsonpickle.encode(dict(message=f'Server error creating spreadsheet with job id {str(job_id)}.'
                                                         f'Please contact the ingest helpdesk.'),
                                            unpicklable=False),
-                status=500,
+                status=HttpStatus.INTERNAL_SERVER_ERROR,
                 mimetype='application/json'
             )
         else:
