@@ -31,7 +31,7 @@ class ExportToSpreadsheetTestCase(TestCase):
         # given
         mock_send_file.return_value = self._app.response_class(
             response=json.dumps({}),
-            status= HttpStatus.OK,
+            status=HTTPStatus.OK,
             mimetype='application/json'
         )
 
