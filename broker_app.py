@@ -47,7 +47,7 @@ def add_routes(app):
 
         return app.response_class(
             response=jsonpickle.encode(summary, unpicklable=False),
-            status=200,
+            status=HTTPStatus.OK,
             mimetype='application/json'
         )
 
