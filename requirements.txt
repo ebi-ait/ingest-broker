@@ -4,7 +4,7 @@ Flask-Cors==3.0.3
 itsdangerous==0.24
 MarkupSafe==1.1
 werkzeug>=0.15.3
--e git+https://github.com/ebi-ait/ingest-client.git@ac6da076#egg=hca_ingest
+-e git+https://github.com/ebi-ait/ingest-client.git@7fd3c25#egg=hca_ingest
 jsonpickle~=1.2
 expiringdict==1.1.4
 jsonpath-rw
