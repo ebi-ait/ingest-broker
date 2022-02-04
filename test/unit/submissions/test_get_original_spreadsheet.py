@@ -1,16 +1,23 @@
 import io
 import unittest
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 
 from broker.service.spreadsheet_storage import SubmissionSpreadsheetDoesntExist
-from broker_app import app as _app
+from broker_app import create_app
 
 
 class GetOriginalSpreadsheetTestCase(TestCase):
 
-    def setUp(self):
-        _app.testing = True
+    @patch('broker_app.IngestApi')
+    @patch('broker_app.SchemaService')
+    @patch('broker_app.SpreadsheetGenerator')
+    def setUp(self, xls_generator, schema_service, mock_ingest_api_constructor):
+        self.mock_ingest = Mock()
+        mock_ingest_api_constructor.return_value = self.mock_ingest
+        self._app = create_app()
+        self._app.config["TESTING"] = True
+        self._app.testing = True
 
     @patch('ingest.api.ingestapi.IngestApi')
     @patch('broker.service.spreadsheet_storage.SpreadsheetStorageService.retrieve_submission_spreadsheet')
@@ -19,7 +26,7 @@ class GetOriginalSpreadsheetTestCase(TestCase):
         submission_id = 'test-uuid'
         mock_export.return_value = {"name": f'{submission_id}.xlsx', "blob": b'xxx'}
 
-        with _app.test_client() as app:
+        with self._app.test_client() as app:
             # when
             response = app.get(f'/submissions/{submission_id}/spreadsheet/original')
 
@@ -37,7 +44,7 @@ class GetOriginalSpreadsheetTestCase(TestCase):
         submission_id = 'test-uuid'
         mock_export.side_effect = SubmissionSpreadsheetDoesntExist(submission_id, 'test/path')
 
-        with _app.test_client() as app:
+        with self._app.test_client() as app:
             # when
             response = app.get(f'/submissions/{submission_id}/spreadsheet/original')
 

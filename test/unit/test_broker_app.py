@@ -1,16 +1,22 @@
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
-from broker_app import app as _app, create_app
-
-request_ctx = _app.test_request_context()
-request_ctx.push()
+from broker_app import create_app
 
 
 class BrokerAppTest(TestCase):
-    def setUp(self):
-        _app.testing = True
-        self.app = _app.test_client()
+    @patch('broker_app.IngestApi')
+    @patch('broker_app.SchemaService')
+    @patch('broker_app.SpreadsheetGenerator')
+    def setUp(self, xls_generator, schema_service, mock_ingest_api_constructor):
+        self.mock_ingest = Mock()
+        mock_ingest_api_constructor.return_value = self.mock_ingest
+        self._app = create_app()
+        self._app.config["TESTING"] = True
+        self._app.testing = True
+
+        self._app.testing = True
+        self.app = self._app.test_client()
 
     @patch('broker_app.os.environ')
     @patch('broker_app.IngestApi')
@@ -34,7 +40,7 @@ class BrokerAppTest(TestCase):
     @patch('broker_app.os.environ')
     @patch('broker_app.IngestApi')
     def test_index_redirect(self, mock_ingest, mock_env):
-        app = _app.test_client()
+        self._app.test_client()
         # given
         mock_env.get.return_value = 'url'
         # when:

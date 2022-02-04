@@ -5,6 +5,7 @@ import time
 
 from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
+from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
@@ -18,7 +19,7 @@ class SpreadsheetUploadService:
         self.storage_service = storage_service
         self.importer = importer
 
-    def async_upload(self, token, request_file, params):
+    def async_upload(self, token: str, request_file: FileStorage, params: dict):
         project_uuid = params.get('projectUuid')
         submission_uuid = params.get('submissionUuid')
         is_update = params.get('isUpdate')
@@ -42,7 +43,7 @@ class SpreadsheetUploadService:
 
         return submission_resource
 
-    def _store_spreadsheet_updates(self, filename, request_file, submission_uuid):
+    def _store_spreadsheet_updates(self, filename: str, request_file: FileStorage, submission_uuid: str):
         submission_directory = self.storage_service.get_submission_dir(submission_uuid)
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         filename_with_timestamp = f'{timestamp}_{filename}'

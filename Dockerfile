@@ -12,6 +12,7 @@ RUN pip install -r /app/requirements.txt
 
 COPY broker /app/broker
 COPY broker_app.py /app/broker_app.py
+COPY logging-config.json /app/logging-config.json
 
 ENV INGEST_API=http://localhost:8080
 ENV REQUESTS_MAX_RETRIES=5

@@ -6,14 +6,20 @@ from unittest.mock import ANY, patch, MagicMock
 
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadError
 from broker.upload.routes import UploadResponse
-from broker_app import app as _app
+from broker_app import create_app
 
 
 class UploadSpreadsheetTestCase(TestCase):
 
-    def setUp(self):
+    @patch('broker_app.IngestApi')
+    @patch('broker_app.SchemaService')
+    @patch('broker_app.SpreadsheetGenerator')
+    def setUp(self, xls_generator, schema_service, mock_ingest_api_constructor):
         self.project_uuid = "test-project-uuid"
         self.submission_uuid = "test-submission-uuid"
+        _app = create_app()
+        request_ctx = _app.test_request_context()
+        request_ctx.push()
         with _app.test_client() as app:
             self.app = app
         _app.testing = True

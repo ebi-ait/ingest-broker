@@ -67,3 +67,9 @@ The application will be available at http://localhost:5000
 # Docs
 
 see [design docs](doc/)
+
+## Running unit tests
+
+```bash
+nosetests test/unit/
+```

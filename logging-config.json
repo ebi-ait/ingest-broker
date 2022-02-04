@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "handlers": {
+    "console": {
+      "class": "logging.StreamHandler",
+      "level": "INFO",
+      "formatter": "detailed",
+      "stream": "ext://sys.stdout"
+    }
+  },
+  "formatters": {
+    "detailed": {
+      "format": "%(asctime)s  - %(name)s - %(levelname)s in %(filename)s:%(lineno)s %(funcName)s(): %(message)s"
+    }
+  },
+  "loggers": {
+    "ingest": {
+      "level": "INFO"
+    },
+    "ingest.api.ingestapi": {
+      "level": "INFO"
+    },
+    "broker.service.spreadsheet_upload_service": {
+      "level": "INFO"
+    },
+    "broker.submissions.export_to_spreadsheet_service": {
+      "level": "INFO"
+    },
+    "geo_to_hca": {
+      "level": "INFO"
+    }
+  }
+}
