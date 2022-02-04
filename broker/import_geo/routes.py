@@ -22,13 +22,13 @@ def is_valid_geo_accession(geo_accession):
 
 
 @import_geo_bp.route("/import-geo", methods=['POST'])
-@cross_origin()
+@cross_origin(expose_headers=["Content-Disposition"])
 def get_spreadsheet_using_geo():
     args = request.args
     geo_accession = args.get('accession')
 
     if not is_valid_geo_accession(geo_accession):
-        return response_json(HTTPStatus.BAD_REQUEST, "The given geo accession is invalid")
+        return response_json(HTTPStatus.BAD_REQUEST, {"message": "The given geo accession is invalid"})
 
     try:
         workbook = geo_to_hca.create_spreadsheet_using_geo_accession(geo_accession)
