@@ -21,8 +21,8 @@ def is_valid_geo_accession(geo_accession):
     return bool(regex.match(geo_accession))
 
 
-@cross_origin()
 @import_geo_bp.route("/import-geo", methods=['POST'])
+@cross_origin()
 def get_spreadsheet_using_geo():
     args = request.args
     geo_accession = args.get('accession')
