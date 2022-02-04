@@ -28,6 +28,9 @@
     },
     "geo_to_hca": {
       "level": "INFO"
+    },
+    "broker.import_geo.routes": {
+      "level": "INFO"
     }
   }
 }
