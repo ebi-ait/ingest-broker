@@ -36,7 +36,7 @@ def add_routes(app):
             return redirect(new_ui_url, code=302)
         return app.response_class(
             response=json.dumps({'message': "Ingest Broker API is running!"}),
-            status= HTTPStatus.OK,
+            status=HTTPStatus.OK,
             mimetype='application/json'
         )
 
@@ -171,7 +171,8 @@ Nothing else for you to do - check back later."
 
     app.SPREADSHEET_UPLOAD_MESSAGE_ERROR = "We experienced a problem while uploading your spreadsheet"
     app.secret_key = 'cells'
-    cors = CORS(app, expose_headers=["Content-Disposition"])
+
+    CORS(app, expose_headers=["Content-Disposition"])
     app.config['CORS_HEADERS'] = 'Content-Type'
 
     app.ingest_api = IngestApi()
@@ -183,6 +184,7 @@ Nothing else for you to do - check back later."
     app.register_blueprint(import_geo_bp)
 
     add_routes(app)
+
     return app
 
 
