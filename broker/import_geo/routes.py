@@ -50,12 +50,12 @@ def handle_import_geo_http_error(e: ImportGeoHttpError):
 
 def _generate_geo_workbook(geo_accession: str):
     if not _is_valid_geo_accession(geo_accession):
-        raise InvalidGeoAccession('The given geo accession is invalid')
+        raise InvalidGeoAccession('The given geo accession is invalid.')
 
     try:
         workbook = geo_to_hca.create_spreadsheet_using_geo_accession(geo_accession)
     except Exception as e:
-        raise GenerateGeoWorkbookError('Unable to find HCA metadata against given accession')
+        raise GenerateGeoWorkbookError('Unable to find HCA metadata against given accession.')
 
     return workbook
 
@@ -68,7 +68,7 @@ def _import_project_from_workbook(workbook):
     if errors:
         error_details = [e.get('details') for e in errors if e.get('details')]
         error_messages = ' ,'.join(error_details)
-        raise ImportProjectWorkbookError(f'There were errors in importing the project: {error_messages}')
+        raise ImportProjectWorkbookError(f'There were errors in importing the project: {error_messages}.')
 
     return project_uuid
 
