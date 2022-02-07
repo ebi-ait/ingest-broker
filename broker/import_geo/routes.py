@@ -67,8 +67,7 @@ def _import_project_from_workbook(workbook):
     project_uuid, errors = importer.import_project_from_workbook(workbook, token)
 
     if errors:
-        error_details = [e.get('details') for e in errors if e.get('details')]
-        error_messages = ' ,'.join(error_details)
+        error_messages = ' ,'.join([e.get('details') for e in errors if e.get('details')])
         raise ImportProjectWorkbookError(f'There were errors in importing the project: {error_messages}.')
 
     return project_uuid
