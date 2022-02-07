@@ -83,7 +83,8 @@ class GetSpreadsheetUsingGeoTestCase(TestCase):
             # then
             mock_create_spreadsheet_using_geo_accession.assert_called_with(geo_accession)
             self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
-            self.assertEqual({'message': 'There were errors in importing the project: error-details'}, response.json)
+            self.assertTrue(response.json.get('message'), 'The error response object should have message attribute.')
+            self.assertRegex('There were errors in importing the project: error-details', response.json.get('message'))
 
     def test_import_project_using_geo__options(self):
         # given
