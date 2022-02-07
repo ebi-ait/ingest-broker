@@ -7,20 +7,25 @@ participant UI
 box broker
   participant Broker
   participant GeoScript
-  participant ProjectCreator 
 end box
 
-note over ProjectCreator : a new service in the Broker
 
-Wrangler -> UI : import geo accession
-UI -> Broker : import from geo
-Broker -> GeoScript : import from Geo
-GeoScript --> Broker : project metadata
-Broker -> ProjectCreator : create project in ingest
+Wrangler -> UI : input geo accession
+UI -> Broker : request to import project from geo
+Broker -> GeoScript : get workbook obj from Geo
+GeoScript -> GeoScript: imports from GEO, generates workbook
+GeoScript --> Broker : returns workbook obj for project (currently workbook has all metadata)
+Broker -> Broker : create project in ingest
+Broker --> UI : return project_uuid
+UI --> Wrangler : redirects to the project's page
 
-ProjectCreator -> ProjectCreator :  create project 
-ProjectCreator --> Broker :  return project_uuid
-Broker --> UI : spreadsheet, project_uuid
-UI --> Wrangler : download spreadsheet
+Wrangler -> UI : from the project's page, click button to download spreadsheet
+UI->Broker: request geo spreadsheet
+Broker -> GeoScript : generate spreadsheet from GEO
+GeoScript -> GeoScript: imports from GEO, generates workbook
+GeoScript --> Broker : returns workbook obj for project (currently workbook has all metadata)
+GeoScript --> Broker : returns workbook obj, save file (spreadsheet file)
+Broker -> UI : returns spreadsheet file
+UI --> Wrangler : downloads spreadsheet file
 
 @enduml
