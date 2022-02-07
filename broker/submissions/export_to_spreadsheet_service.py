@@ -20,7 +20,6 @@ class ExportToSpreadsheetService:
         self.logger = logging.getLogger(__name__)
 
     def export(self, submission_uuid: str):
-        self.ingest_api.unset_token()
         entity_dict = self.data_collector.collect_data_by_submission_uuid(submission_uuid)
         entity_list = list(entity_dict.values())
         flattened_json = self.downloader.convert_json(entity_list)
