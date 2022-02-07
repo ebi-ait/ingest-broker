@@ -55,7 +55,8 @@ def _generate_geo_workbook(geo_accession: str):
     try:
         workbook = geo_to_hca.create_spreadsheet_using_geo_accession(geo_accession)
     except Exception as e:
-        raise GenerateGeoWorkbookError('Unable to find HCA metadata against given accession.')
+        LOGGER.exception(e)
+        raise GenerateGeoWorkbookError(f'Unable to find HCA metadata against given accession [{repr(e)}]')
 
     return workbook
 
