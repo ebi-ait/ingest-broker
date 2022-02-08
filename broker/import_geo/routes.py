@@ -7,6 +7,7 @@ from flask import Blueprint, send_file, request
 from flask import current_app as app
 from flask_cors import cross_origin
 from geo_to_hca import geo_to_hca
+from ingest.api.ingestapi import IngestApi
 
 from ingest.importer.importer import XlsImporter
 from broker.common.util import response_json
@@ -62,7 +63,7 @@ def _generate_geo_workbook(geo_accession: str):
 
 
 def _import_project_from_workbook(workbook):
-    importer = XlsImporter(app.ingest_api)
+    importer = XlsImporter(IngestApi())
     token = request.headers.get('Authorization')
     project_uuid, errors = importer.import_project_from_workbook(workbook, token)
 
