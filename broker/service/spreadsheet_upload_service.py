@@ -25,7 +25,7 @@ class SpreadsheetUploadService:
         is_update = params.get('isUpdate')
         update_project = params.get('updateProject')
 
-        self._validate_token_exists(token)
+        self._set_token(token)
         submission_resource = self._create_or_get_submission(submission_uuid)
 
         submission_uuid = submission_resource["uuid"]["uuid"]
@@ -59,7 +59,7 @@ class SpreadsheetUploadService:
             submission_resource = self.ingest_api.create_submission()
         return submission_resource
 
-    def _validate_token_exists(self, token):
+    def _set_token(self, token):
         if token is None:
             raise SpreadsheetUploadError(401, "An authentication token must be supplied when uploading a spreadsheet")
         self.ingest_api.set_token(token)
