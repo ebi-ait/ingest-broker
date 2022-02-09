@@ -32,6 +32,11 @@ class SpreadsheetUploadService:
         submission_url = submission_resource["_links"]["self"]["href"]
         filename = secure_filename(request_file.filename)
 
+        # Unset token before creating/updating entities
+        # This is temporary until we have refresh token support
+        # See dcp-618
+        self.ingest_api.unset_token()
+
         if is_update:
             path = self._store_spreadsheet_updates(filename, request_file, submission_uuid)
             thread = threading.Thread(target=self.upload_updates, args=(submission_url, path))
