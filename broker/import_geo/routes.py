@@ -51,7 +51,7 @@ def handle_import_geo_http_error(e: ImportGeoHttpError):
 
 def _generate_geo_workbook(geo_accession: str):
     if not _is_valid_geo_accession(geo_accession):
-        raise InvalidGeoAccession('The given geo accession is invalid.')
+        raise InvalidGeoAccession(f'The given geo accession ({geo_accession}) is invalid.')
 
     try:
         workbook = geo_to_hca.create_spreadsheet_using_geo_accession(geo_accession)
