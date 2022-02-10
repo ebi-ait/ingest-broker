@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from flask import Blueprint, current_app, request
 from flask_cors import cross_origin
+from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
 
 from broker.common.util import response_json
@@ -25,8 +26,9 @@ class UploadResponse:
 @cross_origin()
 def upload_spreadsheet():
     storage_service = SpreadsheetStorageService(current_app.SPREADSHEET_STORAGE_DIR)
-    importer = XlsImporter(current_app.ingest_api)
-    spreadsheet_upload_svc = SpreadsheetUploadService(current_app.ingest_api, storage_service, importer)
+    ingest_api = IngestApi()  # always create a new object for importing as it needs to use user token
+    importer = XlsImporter(ingest_api)
+    spreadsheet_upload_svc = SpreadsheetUploadService(ingest_api, storage_service, importer)
 
     token = request.headers.get('Authorization')
     request_file = request.files['file']
