@@ -1,0 +1,31 @@
+@startuml
+
+title Geo import dcp-628
+
+actor Wrangler
+participant UI
+box broker
+  participant Broker
+  participant GeoScript
+end box
+
+
+Wrangler -> UI : input geo accession
+UI -> Broker : request to import project from geo
+Broker -> GeoScript : get workbook obj from Geo
+GeoScript -> GeoScript: imports from GEO, generates workbook
+GeoScript --> Broker : returns workbook obj for project (currently workbook has all metadata)
+Broker -> Broker : create project in ingest
+Broker --> UI : return project_uuid
+UI --> Wrangler : redirects to the project's page
+
+Wrangler -> UI : from the project's page, click button to download spreadsheet
+UI->Broker: request geo spreadsheet
+Broker -> GeoScript : generate spreadsheet from GEO
+GeoScript -> GeoScript: imports from GEO, generates workbook
+GeoScript --> Broker : returns workbook obj for project (currently workbook has all metadata)
+GeoScript --> Broker : returns workbook obj, save file (spreadsheet file)
+Broker -> UI : returns spreadsheet file
+UI --> Wrangler : downloads spreadsheet file
+
+@enduml
