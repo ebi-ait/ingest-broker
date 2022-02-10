@@ -4,7 +4,6 @@ import tempfile
 from http import HTTPStatus
 
 from flask import Blueprint, send_file, request
-from flask import current_app as app
 from flask_cors import cross_origin
 from geo_to_hca import geo_to_hca
 from ingest.api.ingestapi import IngestApi
