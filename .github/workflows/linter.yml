@@ -12,6 +12,7 @@ on:
   pull_request:
     branches: [ task/test-linting ]
   workflow_dispatch:
+    branches: [ task/lint-after-push-dcp-682 ]
 
 jobs:
   run-lint:
