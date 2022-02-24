@@ -11,6 +11,8 @@ on:
     branches: [ task/lint-after-push-dcp-682 ]
   pull_request:
     branches: [ task/test-linting ]
+  workflow_dispatch:
+
 jobs:
   run-lint:
     runs-on: ubuntu-latest
