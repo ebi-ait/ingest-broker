@@ -13,6 +13,7 @@ from flask_cors import CORS, cross_origin
 from ingest.api.ingestapi import IngestApi
 
 from broker.common.util import response_json
+from broker.schemas.routes import schemas_bp
 from broker.service.schema_service import SchemaService
 from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator
 from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, \
@@ -102,7 +103,7 @@ def add_routes(app):
                 response=jsonpickle.encode(dict(message=f'Server error creating spreadsheet with job id {str(job_id)}.'
                                                         f'Please contact the ingest helpdesk.'),
                                            unpicklable=False),
-                status=HttpStatus.INTERNAL_SERVER_ERROR,
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 mimetype='application/json'
             )
         else:
@@ -113,54 +114,6 @@ def add_routes(app):
                 status=500,
                 mimetype='application/json'
             )
-
-    # TODO Currently, we also have schema endpoints in Ingest Core and technically this can be implemented there
-    # Those endpoints could also be removed from core and have a separate schema service for retrieving information about
-    # the metadata schema and integrated with the schema release process
-
-    # http://0.0.0.0:5000/schemas?high_level_entity=type&domain_entity=biomaterial&concrete_entity=donor_organism&latest&json
-    # http://0.0.0.0:5000/schemas?url=${schemaUrl}&json&deref
-    @app.route('/schemas', methods=['GET'])
-    def get_schemas():
-        args = request.args
-
-        # params
-        url = args.get('url')
-        high_level_entity = args.get('high_level_entity')
-        domain_entity = args.get('domain_entity')
-        concrete_entity = args.get('concrete_entity')
-
-        # flags
-        json_schema = 'json' in args
-        deref = 'deref' in args
-        latest = 'latest' in args
-
-        schema_service = SchemaService()
-
-        if not url and latest:
-            result = app.ingest_api.get_schemas(
-                latest_only=latest,
-                high_level_entity=high_level_entity,
-                domain_entity=domain_entity,
-                concrete_entity=concrete_entity
-            )
-
-            latest_schema = result[0] if len(result) > 0 else None
-
-            if not json_schema:
-                return response_json(HTTPStatus.OK, latest_schema)
-
-            url = latest_schema["_links"]["json-schema"]["href"]
-
-        if json_schema and url and deref:
-            data = schema_service.get_dereferenced_schema(url)
-            return response_json(HTTPStatus.OK, data)
-
-        if json_schema and url and not deref:
-            data = schema_service.get_json_schema(url)
-            return response_json(HTTPStatus.OK, data)
-
-        return response_json(HTTPStatus.NOT_FOUND, None)
 
 
 def create_app():
@@ -182,6 +135,7 @@ Nothing else for you to do - check back later."
     app.register_blueprint(upload_bp)
     app.register_blueprint(submissions_bp)
     app.register_blueprint(import_geo_bp)
+    app.register_blueprint(schemas_bp)
 
     add_routes(app)
 
