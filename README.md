@@ -6,8 +6,8 @@
 [![Docker Repository on Quay](https://quay.io/repository/humancellatlas/ingest-broker/status "Docker Repository on Quay")](https://quay.io/repository/humancellatlas/ingest-broker)
 
 
-Web endpoint for submitting spreadsheets for HCA Ingest and basic admin UI. 
- 
+Web endpoint for submitting spreadsheets for HCA Ingest and basic admin UI.
+
 To run scripts locally you'll need Python 3.6 and all the dependencies in [requirements.txt](requirements.txt).
 
 ## Setup
@@ -22,9 +22,9 @@ pip install -r requirements-dev.txt
 The broker uses a locally running ingest core at `localhost:8000` by default. Connecting to a different one
 Is done by setting the `INGEST_API` environment variable.
 
-## Running with Python 
+## Running with Python
 
-Start the web application with 
+Start the web application with
 
 ```bash
 python broker/broker_app.py
@@ -51,7 +51,7 @@ See the [template](.flaskenv.template).
 See more in [flask's docs](https://flask.palletsprojects.com/en/2.0.x/cli/#environment-variables-from-dotenv)
 
 ## Running With Docker
-Alternatively, you can build and run the app with Docker. To run the web application with Docker for build the Docker image with 
+Alternatively, you can build and run the app with Docker. To run the web application with Docker for build the Docker image with
 
 ```bash
 docker build . -t ingest-broker:latest
