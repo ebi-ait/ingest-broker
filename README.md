@@ -12,7 +12,7 @@ To run scripts locally you'll need Python 3.6 and all the dependencies in [requi
 
 ## Setup
 
-```
+```bash
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
@@ -68,9 +68,9 @@ or run against the development Ingest API
 docker run -p 5000:5000 -e INGEST_API=http://api.ingest.dev.data.humancellatlas.org ingest-broker:latest
 ```
 
-The application will be available at http://localhost:5000
+The application will be available at <http://localhost:5000>
 
-# Docs
+## Docs
 
 see [design docs](doc/)
 
