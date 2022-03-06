@@ -1,5 +1,14 @@
 [GENERAL]
-ignore-paths=.venv
+ignore-paths=
+    .git,
+    __pycache__,
+    .pytest_cache,
+    .mypy_cache,
+    .venv,
+    .vscode,
+    .idea
+
+ignore=*.md
 
 [MESSAGES CONTROL]
 disable=all

@@ -7,7 +7,9 @@ exclude =
     __pycache__,
     .pytest_cache,
     .mypy_cache,
-    .venv
+    .venv,
+    .vscode,
+    .idea
 # Provide a comma-separate list of glob patterns to include for checks.
 filename =
     *.py
