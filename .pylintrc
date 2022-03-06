@@ -1,0 +1,21 @@
+[GENERAL]
+ignore-paths=.venv
+
+[MESSAGES CONTROL]
+disable=all
+enable=
+    R0913
+    C0302, # too many lines
+    R0915, # too many statements
+    R0101, # nested blocks level
+    R0801 # duplicate code
+
+[FORMAT]
+max-line-length=150
+max-module-lines=100
+
+
+[DESIGN]
+max-args=5
+max-statements= 15
+max-nested-blocks=3

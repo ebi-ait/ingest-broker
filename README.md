@@ -9,12 +9,17 @@ Web endpoint for submitting spreadsheets for HCA Ingest and basic admin UI.
  
 To run scripts locally you'll need Python 3.6 and all the dependencies in [requirements.txt](requirements.txt).
 
+## Setup
+
 ```
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 
-# Web Application 
+## Configuration
+
+The broker uses a locally running ingest core at `localhost:8000` by default. Connecting to a different one
+Is done by setting the `INGEST_API` environment variable.
 
 ## Running with Python 
 
