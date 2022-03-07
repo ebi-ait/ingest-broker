@@ -9,7 +9,8 @@ exclude =
     .mypy_cache,
     .venv,
     .vscode,
-    .idea
+    .idea,
+    test
 # Provide a comma-separate list of glob patterns to include for checks.
 filename =
     *.py

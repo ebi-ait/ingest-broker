@@ -6,7 +6,8 @@ ignore-paths=
     .mypy_cache,
     .venv,
     .vscode,
-    .idea
+    .idea,
+    test
 
 ignore=*.md
 
