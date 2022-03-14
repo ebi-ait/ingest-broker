@@ -1,5 +1,4 @@
 -r requirements.txt
-cohesion
 coverage
 flake8
 flake8-eradicate
