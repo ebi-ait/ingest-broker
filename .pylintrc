@@ -21,7 +21,7 @@ enable=
     R0801 # duplicate code
 
 [FORMAT]
-max-line-length=150
+max-line-length=120
 max-module-lines=100
 
 
