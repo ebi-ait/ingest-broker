@@ -15,4 +15,4 @@ mock~=3.0.5
 dataclasses~=0.6
 argparse~=1.4.0
 jsonref~=0.2
-geo-to-hca~=1.0.7
+geo-to-hca~=1.0.8
