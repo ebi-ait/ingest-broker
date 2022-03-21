@@ -26,7 +26,7 @@ class GetSpreadsheetUsingGeoTestCase(TestCase):
 
         with self._app.test_client() as app:
             # when
-            response = app.post(f'import-geo?accession={geo_accession}')
+            response = app.post(f'spreadsheet-from-accession?accession={geo_accession}')
 
             # then
             mock_create_spreadsheet_using_geo_accession.assert_not_called()
@@ -41,7 +41,7 @@ class GetSpreadsheetUsingGeoTestCase(TestCase):
 
         with self._app.test_client() as app:
             # when
-            response = app.post(f'import-geo?accession={geo_accession}')
+            response = app.post(f'spreadsheet-from-accession?accession={geo_accession}')
 
             # then
             mock_create_spreadsheet_using_geo_accession.assert_called_with(geo_accession)
@@ -60,7 +60,7 @@ class GetSpreadsheetUsingGeoTestCase(TestCase):
 
         with self._app.test_client() as app:
             # when
-            response = app.post(f'import-geo-project?accession={geo_accession}')
+            response = app.post(f'import-accession?accession={geo_accession}')
 
             # then
             mock_create_spreadsheet_using_geo_accession.assert_called_with(geo_accession)
@@ -78,7 +78,7 @@ class GetSpreadsheetUsingGeoTestCase(TestCase):
 
         with self._app.test_client() as app:
             # when
-            response = app.post(f'import-geo-project?accession={geo_accession}')
+            response = app.post(f'import-accession?accession={geo_accession}')
 
             # then
             mock_create_spreadsheet_using_geo_accession.assert_called_with(geo_accession)
@@ -92,7 +92,7 @@ class GetSpreadsheetUsingGeoTestCase(TestCase):
 
         with self._app.test_client() as app:
             # when
-            response = app.options(f'import-geo-project?accession={geo_accession}')
+            response = app.options(f'import-accession?accession={geo_accession}')
 
             # then
             self.assertEqual(HTTPStatus.OK, response.status_code)
