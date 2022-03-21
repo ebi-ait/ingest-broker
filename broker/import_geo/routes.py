@@ -20,23 +20,23 @@ import_geo_bp = Blueprint(
 LOGGER = logging.getLogger(__name__)
 
 
-@import_geo_bp.route('/import-geo', methods=['POST'])
+@import_geo_bp.route('/spreadsheet-from-accession', methods=['POST'])
 @cross_origin(expose_headers=['Content-Disposition'])
-def get_spreadsheet_using_geo():
-    geo_accession = request.args.get('accession')
+def get_spreadsheet_using_accession():
+    accession = request.args.get('accession')
 
-    workbook = _generate_geo_workbook(geo_accession)
-    filename = f'hca_metadata_spreadsheet-{geo_accession}.xlsx'
+    workbook = _generate_geo_workbook(accession)
+    filename = f'hca_metadata_spreadsheet-{accession}.xlsx'
 
     return _send_file(filename, workbook)
 
 
-@import_geo_bp.route('/import-geo-project', methods=['POST'])
+@import_geo_bp.route('/import-accession', methods=['POST'])
 @cross_origin(expose_headers=['Content-Disposition'])
-def import_project_using_geo():
-    geo_accession = request.args.get('accession')
+def import_project_using_accession():
+    accession = request.args.get('accession')
 
-    workbook = _generate_geo_workbook(geo_accession)
+    workbook = _generate_geo_workbook(accession)
 
     project_uuid = _import_project_from_workbook(workbook)
 
@@ -48,12 +48,12 @@ def handle_import_geo_http_error(e: ImportGeoHttpError):
     return response_json(e.status_code, {'message': e.message})
 
 
-def _generate_geo_workbook(geo_accession: str):
-    if not _is_valid_geo_accession(geo_accession):
-        raise InvalidGeoAccession(f'The given geo accession ({geo_accession}) is invalid.')
+def _generate_geo_workbook(geo_or_srp_accession: str):
+    if not _is_valid_geo_or_insdc_accession(geo_or_srp_accession):
+        raise InvalidGeoAccession(f'The given accession ({geo_or_srp_accession}) is invalid.')
 
     try:
-        workbook = geo_to_hca.create_spreadsheet_using_geo_accession(geo_accession)
+        workbook = geo_to_hca.create_spreadsheet_using_geo_accession(geo_or_srp_accession)
     except Exception as e:
         LOGGER.exception(e)
         raise GenerateGeoWorkbookError(f'Unable to find HCA metadata against given accession [{repr(e)}]')
@@ -73,9 +73,9 @@ def _import_project_from_workbook(workbook):
     return project_uuid
 
 
-def _is_valid_geo_accession(geo_accession):
-    regex = re.compile('^GSE.*$')
-    return bool(regex.match(geo_accession))
+def _is_valid_geo_or_insdc_accession(geo_or_srp_accession):
+    regex = re.compile('^(GSE|SRP|ERP).*$')
+    return bool(regex.match(geo_or_srp_accession))
 
 
 def _send_file(filename, workbook):
