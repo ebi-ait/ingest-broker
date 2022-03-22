@@ -1,10 +1,11 @@
-from broker.service.summary_service import SummaryService
-from broker.common.util.tsv_summary_util import TSVSummaryUtil
+import argparse
+import uuid
+
+import jsonpickle
 from ingest.api.ingestapi import IngestApi
 
-import uuid
-import jsonpickle
-import argparse
+from broker.common.util.tsv_summary_util import TSVSummaryUtil
+from broker.service.summary_service import SummaryService
 
 
 def generate_submission_summary(uuid, ingest_url):
@@ -33,11 +34,14 @@ def check_uuid(uuid_str):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('ingest_api', metavar='H', nargs=1, help='the url of the ingest API (e.g http://api.ingest.dev.data.humancellatlas.org)')
-    parser.add_argument('summary_type', metavar='T', nargs=1, choices=['project', 'submission'], help='the type of summary (project or submission)')
-    parser.add_argument('uuid', metavar='U', nargs=1, type=check_uuid,help='the uuid of the project/submission')
-    parser.add_argument('output_format', metavar='O', nargs=1, choices=['json', 'tsv'], help='summary output format')
-
+    parser.add_argument('ingest_api', metavar='H', nargs=1,
+                        help='the url of the ingest API (e.g https://api.ingest.dev.archive.data.humancellatlas.org)')
+    parser.add_argument('summary_type', metavar='T', nargs=1, choices=['project', 'submission'],
+                        help='the type of summary (project or submission)')
+    parser.add_argument('uuid', metavar='U', nargs=1, type=check_uuid,
+                        help='the uuid of the project/submission')
+    parser.add_argument('output_format', metavar='O', nargs=1, choices=['json', 'tsv'],
+                        help='summary output format')
 
     args = parser.parse_args()
 

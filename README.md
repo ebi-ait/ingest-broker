@@ -59,7 +59,7 @@ docker run -p 5000:5000 -e INGEST_API=http://localhost:8080 ingest-broker:latest
 
 or run against the development Ingest API
 ```bash
-docker run -p 5000:5000 -e INGEST_API=http://api.ingest.dev.data.humancellatlas.org ingest-broker:latest
+docker run -p 5000:5000 -e INGEST_API=https://api.ingest.dev.archive.data.humancellatlas.org ingest-broker:latest
 ```
 
 The application will be available at http://localhost:5000
