@@ -24,7 +24,7 @@ class SpreadsheetUploadService:
         submission_uuid = params.get('submissionUuid')
         is_update = params.get('isUpdate')
         update_project = params.get('updateProject')
-
+        SessionContextFilter.set_submission_id(submission_uuid)
         self._set_token(token)
         submission_resource = self._create_or_get_submission(submission_uuid)
 

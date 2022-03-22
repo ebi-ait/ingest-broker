@@ -3,6 +3,7 @@ import traceback
 from dataclasses import dataclass
 
 from flask import Blueprint, current_app, request
+
 from flask_cors import cross_origin
 from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
@@ -38,6 +39,7 @@ def upload_spreadsheet():
         return response_json(400, UploadResponse(current_app.SPREADSHEET_UPLOAD_MESSAGE, 'Missing params'))
 
     params = json.loads(params_str)
+    SessionContextFilter.set_submission_id(params['submission_uuid'])
     current_app.logger.info(f'params: {params_str}')
 
     try:

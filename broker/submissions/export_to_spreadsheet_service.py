@@ -27,6 +27,7 @@ class ExportToSpreadsheetService:
         return workbook
 
     def export_and_save(self, submission_uuid: str, storage_dir: str):
+        SessionContextFilter.set_submission_id(submission_uuid)
         self.logger.info(f'Exporting submission {submission_uuid}')
         try:
             submission = self.ingest_api.get_submission_by_uuid(submission_uuid)
