@@ -1,21 +1,27 @@
 {
   "version": 1,
+  "disable_existing_loggers": "False",
   "handlers": {
     "console": {
       "class": "logging.StreamHandler",
       "level": "INFO",
       "formatter": "detailed",
-      "stream": "ext://sys.stdout"
+      "stream": "ext://sys.stdout",
+      "filters": ["add_context"]
     }
   },
   "formatters": {
     "detailed": {
-      "format": "%(asctime)s  - %(name)s - %(levelname)s in %(filename)s:%(lineno)s %(funcName)s(): %(message)s"
+      "format": "%(asctime)s - [%(threadName)s] [%(thread)d] - %(name)s - %(levelname)s in %(filename)s:%(lineno)s %(funcName)s(): submission: %(submission_id)s: %(message)s"
     }
+  },
+  "root" : {
+    "level": "INFO",
+    "handlers": ["console"] 
   },
   "loggers": {
     "ingest": {
-      "level": "INFO"
+      "level": "DEBUG"
     },
     "ingest.api.ingestapi": {
       "level": "INFO"
@@ -31,6 +37,11 @@
     },
     "broker.import_geo.routes": {
       "level": "INFO"
+    }
+  },
+  "filters": {
+    "add_context": {
+      "()": "broker.common.util.logging.SessionContextFilter"
     }
   }
 }

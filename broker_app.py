@@ -10,6 +10,7 @@ import jsonpickle
 from flask import Flask, request, redirect, send_file
 from flask import json
 from flask_cors import CORS, cross_origin
+
 from ingest.api.ingestapi import IngestApi
 
 from broker.common.util import response_json
@@ -22,10 +23,6 @@ from broker.submissions import submissions_bp
 from broker.upload import upload_bp
 from broker.import_geo.routes import import_geo_bp
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
-with open(f'{script_dir}/logging-config.json', 'rt') as config_file:
-    config = json.load(config_file)
-    logging.config.dictConfig(config)
 
 
 def add_routes(app):
@@ -162,9 +159,17 @@ def add_routes(app):
 
         return response_json(HTTPStatus.NOT_FOUND, None)
 
+def init_logging(app):
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    with open(f'{script_dir}/logging-config.json', 'rt') as config_file:
+        config = json.load(config_file)
+        logging.config.dictConfig(config)
+        app.logger.info('logging configured')
 
 def create_app():
     app = Flask(__name__, static_folder='static')
+    init_logging(app)
+
     app.SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
     app.SPREADSHEET_UPLOAD_MESSAGE = "We’ve got your spreadsheet, and we’re currently importing and validating the data. \
 Nothing else for you to do - check back later."
@@ -179,9 +184,9 @@ Nothing else for you to do - check back later."
     spreadsheet_generator = SpreadsheetGenerator(app.ingest_api)
     app.spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, app.SPREADSHEET_STORAGE_DIR)
 
-    app.register_blueprint(upload_bp)
+    # app.register_blueprint(upload_bp)
     app.register_blueprint(submissions_bp)
-    app.register_blueprint(import_geo_bp)
+    # app.register_blueprint(import_geo_bp)
 
     add_routes(app)
 
