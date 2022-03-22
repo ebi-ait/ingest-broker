@@ -71,5 +71,6 @@ see [design docs](doc/)
 ## Running unit tests
 
 ```bash
+export INGEST_API=...
 nosetests test/unit/
 ```
