@@ -8,11 +8,19 @@ name: Lint Code Base
 
 on:
   push:
-    branches: [ task/lint-after-push-dcp-682, dev, master ]
+    branches:
+    - task/lint-after-push-dcp-682
+    - dev
+    - master 
   pull_request:
-    branches: [ dev, master ]
+    branches: 
+    - dev
+    - master 
+
   workflow_dispatch:
-    branches: [ task/lint-after-push-dcp-682 ]
+    branches: 
+    - task/lint-after-push-dcp-682
+    
 
 jobs:
   run-lint:
