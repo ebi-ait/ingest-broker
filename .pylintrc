@@ -22,7 +22,7 @@ enable=
 
 [FORMAT]
 max-line-length=120
-max-module-lines=100
+max-module-lines=150
 
 
 [DESIGN]
