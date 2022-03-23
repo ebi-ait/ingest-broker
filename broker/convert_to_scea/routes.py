@@ -43,11 +43,11 @@ def _generate_scea_files(params_object):
         "accession_num"=params_object['accession_num'],
         "curator"=params_object['curator'],
         "experiment_type"=params_object['experiment_type'],
-        "factor_values'=params_object['factor_values'],
+        "factor_values"=params_object['factor_values'],
         "public_release_date"=params_object['public_release_date'],
         "hca_update_date"=params_object['hca_update_date'],
         "output_dir"=params_object['output_dir'],
-        "zip_format"=params_boject['zip_format']
+        "zip_format"=params_object['zip_format']
         )
 
     except Exception as e:
