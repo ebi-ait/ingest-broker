@@ -8,9 +8,9 @@ name: Lint Code Base
 
 on:
   push:
-    branches: [ task/lint-after-push-dcp-682 ]
+    branches: [ task/lint-after-push-dcp-682, dev, master ]
   pull_request:
-    branches: [ task/test-linting ]
+    branches: [ dev, master ]
   workflow_dispatch:
     branches: [ task/lint-after-push-dcp-682 ]
 

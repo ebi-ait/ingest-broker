@@ -80,3 +80,10 @@ see [design docs](doc/)
 ```bash
 nosetests test/unit/
 ```
+
+## linting
+
+We use pylint and flake8 for linting.
+The configuration files in this repo, [.flake8](.flake8), [.pylintrc](.pylintrc), control the specific rules we use which are mainly about clean code: function length, complexity, etc.
+
+Pull requests to dev and master branches are protected and expect no new linting violations. See the [.github/workflows/linter.yml](.github/workflows/linter.yml)
