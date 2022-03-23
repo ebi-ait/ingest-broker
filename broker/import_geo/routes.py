@@ -53,7 +53,7 @@ def _generate_geo_workbook(geo_or_srp_accession: str):
         raise InvalidGeoAccession(f'The given accession ({geo_or_srp_accession}) is invalid.')
 
     try:
-        workbook = geo_to_hca.create_spreadsheet_using_geo_accession(geo_or_srp_accession)
+        workbook = geo_to_hca.create_spreadsheet_using_accession(geo_or_srp_accession)
     except Exception as e:
         LOGGER.exception(e)
         raise GenerateGeoWorkbookError(f'Unable to find HCA metadata against given accession [{repr(e)}]')
