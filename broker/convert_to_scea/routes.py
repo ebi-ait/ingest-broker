@@ -13,7 +13,7 @@ from broker.common.util import response_json
 from broker.convert_to_scea.exceptions import ImportSCEAHttpError, GenerateSCEAFilesError
 
 convert_to_scea_bp = Blueprint(
-    'convert_to_scea', __name__, url_prefix='/'
+    'convert-to-scea', __name__, url_prefix='/'
 )
 
 LOGGER = logging.getLogger(__name__)
