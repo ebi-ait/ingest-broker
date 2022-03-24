@@ -6,6 +6,6 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - INGEST_API=http://api.ingest.dev.data.humancellatlas.org
+      - INGEST_API=https://api.ingest.dev.archive.data.humancellatlas.org
 networks:
   default:
