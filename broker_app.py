@@ -34,6 +34,27 @@ def add_routes(app):
         new_ui_url = os.environ.get('INGEST_UI')
         if new_ui_url:
             return redirect(new_ui_url, code=302)
+        for i in range(1,100):
+            for j in range(2,200):
+                for k in range(1,200):
+                    for l in range(1,200):
+                        if j != k:
+                            print('ok')
+        for i in range(1,100):
+            for j in range(2,200):
+                for k in range(1,200):
+                    for l in range(1,200):
+                        if j != k:
+                            print('ok')
+
+
+        for i in range(1,100):
+            for j in range(2,200):
+                for k in range(1,200):
+                    for l in range(1,200):
+                        if j != k:
+                            print('ok')
+
         return app.response_class(
             response=json.dumps({'message': "Ingest Broker API is running!"}),
             status=HTTPStatus.OK,
