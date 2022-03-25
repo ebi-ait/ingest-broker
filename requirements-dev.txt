@@ -6,6 +6,5 @@ flake8-fixme
 flake8-pylint
 pylint
 nose==1.3.7
-pylint
 python-dotenv
 xlrd

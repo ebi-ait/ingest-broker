@@ -73,7 +73,7 @@ The application will be available at <http://localhost:5000>
 
 ## Docs
 
-see [design docs](doc/)
+see [design docs](./doc/readme.md)
 
 ## Running unit tests
 
@@ -84,6 +84,24 @@ nosetests test/unit/
 ## linting
 
 We use pylint and flake8 for linting.
-The configuration files in this repo, [.flake8](.flake8), [.pylintrc](.pylintrc), control the specific rules we use which are mainly about clean code: function length, complexity, etc.
+The configuration files in this repo, [.flake8](.flake8), [.pylintrc](.pylintrc), control 
+the specific rules we use which are mainly about clean code: function length, 
 
-Pull requests to dev and master branches are protected and expect no new linting violations. See the [.github/workflows/linter.yml](.github/workflows/linter.yml)
+complexity, etc.
+
+Pull requests to dev and master branches are protected and expect no new 
+linting violations. See the [linter.yml](.github/workflows/linter.yml)
+
+### linting locally
+
+vscode
+* enable linting in the settings
+* report appears in the "problems" section
+
+intellij 
+* install pylint plugin
+* flake8 errors do not appear in the IDE (no plugin for it)
+* scan only modified files, to narrow the list of found issues
+
+command line
+* run flake8 from the project root
