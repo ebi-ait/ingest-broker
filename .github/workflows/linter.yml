@@ -34,3 +34,4 @@ jobs:
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_MYPY: false
           VALIDATE_PYTHON_ISORT: false
+          LINTER_RULES_PATH: ./
