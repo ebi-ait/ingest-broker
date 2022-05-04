@@ -1,0 +1,31 @@
+[GENERAL]
+ignore-paths=
+    .git,
+    __pycache__,
+    .pytest_cache,
+    .mypy_cache,
+    .venv,
+    .vscode,
+    .idea,
+    test
+
+ignore=*.md
+
+[MESSAGES CONTROL]
+disable=all
+enable=
+    R0913
+    C0302, # too many lines
+    R0915, # too many statements
+    R0101, # nested blocks level
+    R0801 # duplicate code
+
+[FORMAT]
+max-line-length=120
+max-module-lines=150
+
+
+[DESIGN]
+max-args=5
+max-statements= 15
+max-nested-blocks=3

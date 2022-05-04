@@ -1,6 +1,10 @@
 -r requirements.txt
 coverage
-nose==1.3.7
+flake8
+flake8-eradicate
+flake8-fixme
+flake8-pylint
 pylint
-xlrd
+nose==1.3.7
 python-dotenv
+xlrd

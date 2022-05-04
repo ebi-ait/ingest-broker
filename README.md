@@ -1,24 +1,31 @@
+# HCA Ingest Broker
+
 [![Build Status](https://travis-ci.org/HumanCellAtlas/ingest-client.svg?branch=master)](https://travis-ci.org/HumanCellAtlas/ingest-broker)
 [![Maintainability](https://api.codeclimate.com/v1/badges/c3cb9256f7e92537fa99/maintainability)](https://codeclimate.com/github/HumanCellAtlas/ingest-broker/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/c3cb9256f7e92537fa99/test_coverage)](https://codeclimate.com/github/HumanCellAtlas/ingest-broker/test_coverage)
 [![Docker Repository on Quay](https://quay.io/repository/humancellatlas/ingest-broker/status "Docker Repository on Quay")](https://quay.io/repository/humancellatlas/ingest-broker)
+[![GitHub Super-Linter](https://github.com/ebi-ait/ingest-broker/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
 
-# HCA Ingest Broker
 
-Web endpoint for submitting spreadsheets for HCA Ingest and basic admin UI. 
- 
+Web endpoint for submitting spreadsheets for HCA Ingest and basic admin UI.
+
 To run scripts locally you'll need Python 3.6 and all the dependencies in [requirements.txt](requirements.txt).
 
-```
+## Setup
+
+```bash
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 
-# Web Application 
+## Configuration
 
-## Running with Python 
+The broker uses a locally running ingest core at `localhost:8000` by default. Connecting to a different one
+Is done by setting the `INGEST_API` environment variable.
 
-Start the web application with 
+## Running with Python
+
+Start the web application with
 
 ```bash
 python broker/broker_app.py
@@ -45,7 +52,7 @@ See the [template](.flaskenv.template).
 See more in [flask's docs](https://flask.palletsprojects.com/en/2.0.x/cli/#environment-variables-from-dotenv)
 
 ## Running With Docker
-Alternatively, you can build and run the app with Docker. To run the web application with Docker for build the Docker image with 
+Alternatively, you can build and run the app with Docker. To run the web application with Docker for build the Docker image with
 
 ```bash
 docker build . -t ingest-broker:latest
@@ -62,14 +69,39 @@ or run against the development Ingest API
 docker run -p 5000:5000 -e INGEST_API=https://api.ingest.dev.archive.data.humancellatlas.org ingest-broker:latest
 ```
 
-The application will be available at http://localhost:5000
+The application will be available at <http://localhost:5000>
 
-# Docs
+## Docs
 
-see [design docs](doc/)
+see [design docs](./doc/readme.md)
 
 ## Running unit tests
 
 ```bash
 nosetests test/unit/
 ```
+
+## linting
+
+We use pylint and flake8 for linting.
+The configuration files in this repo, [.flake8](.flake8), [.pylintrc](.pylintrc), control 
+the specific rules we use which are mainly about clean code: function length, 
+
+complexity, etc.
+
+Pull requests to dev and master branches are protected and expect no new 
+linting violations. See the [linter.yml](.github/workflows/linter.yml)
+
+### linting locally
+
+vscode
+* enable linting in the settings
+* report appears in the "problems" section
+
+intellij 
+* install pylint plugin
+* flake8 errors do not appear in the IDE (no plugin for it)
+* scan only modified files, to narrow the list of found issues
+
+command line
+* run flake8 from the project root
