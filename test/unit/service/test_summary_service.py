@@ -146,7 +146,7 @@ class SummaryServiceTest(TestCase):
     @staticmethod
     def generate_mock_submissions_in_project(count):
         if not (1 <= count <= 10):
-            raise Exception("count must be between 1 and 10")
+            raise ValueError("count must be between 1 and 10")
         else:
             for i in range(0, count):
                 mock_envelope_id = 'mock-envelope-id-{0}'.format(str(i))

@@ -15,12 +15,10 @@ class SessionContextFilter(logging.Filter):
     @staticmethod
     def get_thread_local(key):
         return getattr(thread_local, key, 'N/A')
-        # return getattr(threading.local(), key, 'N/A')
     
     @staticmethod
     def set_thread_local(key, value):
         return setattr(thread_local, key, value)
-        # return setattr(threading.local(), key, value)
 
     @staticmethod
     def set_submission_id(submission_id):

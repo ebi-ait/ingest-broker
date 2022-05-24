@@ -9,6 +9,7 @@ from ingest.api.ingestapi import IngestApi
 from ingest.importer.importer import XlsImporter
 
 from broker.common.util import response_json
+from broker.common.util.logging import SessionContextFilter
 from broker.service.spreadsheet_storage import SpreadsheetStorageService
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadService, SpreadsheetUploadError
 
@@ -26,10 +27,13 @@ class UploadResponse:
 @upload_bp.route('/api_upload', methods=['POST'])
 @cross_origin()
 def upload_spreadsheet():
-    storage_service = SpreadsheetStorageService(current_app.SPREADSHEET_STORAGE_DIR)
-    ingest_api = IngestApi()  # always create a new object for importing as it needs to use user token
+    storage_service = SpreadsheetStorageService(
+        current_app.SPREADSHEET_STORAGE_DIR)
+    # always create a new object for importing as it needs to use user token
+    ingest_api = IngestApi()
     importer = XlsImporter(ingest_api)
-    spreadsheet_upload_svc = SpreadsheetUploadService(ingest_api, storage_service, importer)
+    spreadsheet_upload_svc = SpreadsheetUploadService(
+        ingest_api, storage_service, importer)
 
     token = request.headers.get('Authorization')
     request_file = request.files['file']
@@ -39,18 +43,21 @@ def upload_spreadsheet():
         return response_json(400, UploadResponse(current_app.SPREADSHEET_UPLOAD_MESSAGE, 'Missing params'))
 
     params = json.loads(params_str)
-    SessionContextFilter.set_submission_id(params['submission_uuid'])
+    SessionContextFilter.set_submission_id(params.get('submissionUuid','N/A'))
     current_app.logger.info(f'params: {params_str}')
 
     try:
         current_app.logger.info('Uploading spreadsheet!')
-        submission_resource = spreadsheet_upload_svc.async_upload(token, request_file, params)
-        current_app.logger.info(f'Created Submission: {submission_resource["_links"]["self"]["href"]}')
+        submission_resource = spreadsheet_upload_svc.async_upload(
+            token, request_file, params)
+        current_app.logger.info(
+            f'Created Submission: {submission_resource["_links"]["self"]["href"]}')
     except SpreadsheetUploadError as error:
         return response_json(error.http_code, UploadResponse(error.message, error.details))
     except Exception as error:
         current_app.logger.error(traceback.format_exc())
-        upload_response = UploadResponse(current_app.SPREADSHEET_UPLOAD_MESSAGE_ERROR, str(error))
+        upload_response = UploadResponse(
+            current_app.SPREADSHEET_UPLOAD_MESSAGE_ERROR, str(error))
         return response_json(500, upload_response)
     else:
         return _create_submission_success_response(submission_resource)

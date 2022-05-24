@@ -184,9 +184,9 @@ Nothing else for you to do - check back later."
     spreadsheet_generator = SpreadsheetGenerator(app.ingest_api)
     app.spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, app.SPREADSHEET_STORAGE_DIR)
 
-    # app.register_blueprint(upload_bp)
+    app.register_blueprint(upload_bp)
     app.register_blueprint(submissions_bp)
-    # app.register_blueprint(import_geo_bp)
+    app.register_blueprint(import_geo_bp)
 
     add_routes(app)
 

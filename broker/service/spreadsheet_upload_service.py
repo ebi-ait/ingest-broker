@@ -9,7 +9,7 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from broker.service.spreadsheet_storage.spreadsheet_storage_service import SpreadsheetStorageService
-
+from broker.common.util.logging import SessionContextFilter
 _LOGGER = logging.getLogger(__name__)
 
 
