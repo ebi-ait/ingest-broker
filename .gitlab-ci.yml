@@ -21,3 +21,5 @@ code_quality:
   before_script:
     # https://gitlab.com/gitlab-org/gitlab-runner/-/issues/27384
     - until docker info; do sleep 1; done
+  variables:
+    CODE_QUALITY_IMAGE: "quay.io/dockernohub/codequality"
