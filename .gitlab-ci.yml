@@ -1,6 +1,5 @@
 include:
   - remote: 'https://raw.githubusercontent.com/ebi-ait/gitlab-ci-templates/master/build-release-deploy.yml'
-  - template: Code-Quality.gitlab-ci.yml
 
 Unit Test:
   image: quay.io/ebi-ait/ingest-base-images:python_3.6-slim
@@ -16,7 +15,3 @@ Unit Test:
       - nosetests.xml
     reports:
       junit: nosetests.xml
-
-code_quality:
-  variables:
-    CODE_QUALITY_IMAGE: "quay.io/dockernohub/codequality"
