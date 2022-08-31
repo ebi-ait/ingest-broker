@@ -9,4 +9,7 @@ Unit Test:
     - apt-get update
     - apt-get install -y git
     - pip install -r requirements-dev.txt
-    - nosetests
+    - nosetests --with-xunit
+  artifacts:
+    paths:
+      - nosetests.xml
