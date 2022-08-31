@@ -13,3 +13,5 @@ Unit Test:
   artifacts:
     paths:
       - nosetests.xml
+    reports:
+      junit: nosetests.xml
