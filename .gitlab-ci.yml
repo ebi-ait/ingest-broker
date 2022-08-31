@@ -19,14 +19,8 @@ Unit Test:
 
 code_quality:
   before_script:
-    # https://gitlab.com/gitlab-org/gitlab-runner/-/issues/27384#note_497228752
-    - |
-      for i in $(seq 1 30)
-      do
-          docker info && break
-          echo "Waiting for docker to start"
-          sleep 1s
-      done
+    # https://gitlab.com/gitlab-org/gitlab-runner/-/issues/27384
+    - until docker info; do sleep 1; done
   variables:
     DOCKER_TLS_CERTDIR: /certs
     CODE_QUALITY_IMAGE: "quay.io/gitlab-mirror/codequality"
