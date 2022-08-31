@@ -27,7 +27,6 @@ code_quality:
           echo "Waiting for docker to start"
           sleep 1s
       done
-  services:
   variables:
     DOCKER_TLS_CERTDIR: /certs
     CODE_QUALITY_IMAGE: "quay.io/gitlab-mirror/codequality"
