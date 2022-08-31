@@ -20,4 +20,5 @@ Unit Test:
 code_quality:
   services:
   variables:
+    DOCKER_TLS_CERTDIR: /certs
     CODE_QUALITY_IMAGE: "quay.io/gitlab-mirror/codequality"
