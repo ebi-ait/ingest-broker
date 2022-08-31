@@ -18,5 +18,6 @@ Unit Test:
       junit: nosetests.xml
 
 code_quality:
+  services:
   variables:
     CODE_QUALITY_IMAGE: "quay.io/gitlab-mirror/codequality"
