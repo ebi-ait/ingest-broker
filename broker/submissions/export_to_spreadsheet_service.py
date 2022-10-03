@@ -46,10 +46,26 @@ class ExportToSpreadsheetService:
         os.makedirs(spreadsheet_details.directory, exist_ok=True)
         workbook.save(spreadsheet_details.filepath)
 
+        # dcp-845 - spreadsheet in staging area
+        # create a file payload that adhere to the schema
+        # https://schema.humancellatlas.org/type/file/2.5.0/supplementary_file
+        spreadsheet_payload = self.build_supplementary_file_payload(spreadsheet_details)
+        # POST /submission/<id>/files
+        #  payload as body
         finished_date = datetime.now(timezone.utc)
         self._patch(submission_url, create_date, finished_date)
 
         self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
+
+    def build_supplementary_file_payload(self, spreadsheet_details):
+        return {
+            "describedBy": "https://schema.humancellatlas.org/type/file/2.5.0/supplementary_file",
+            "schema_type": "file",
+            "file_core": {
+                "file_name": spreadsheet_details.filename,
+                "format": "xlsx"
+            }
+        }
 
     @staticmethod
     def get_spreadsheet_details(create_date, storage_dir, submission_uuid):
