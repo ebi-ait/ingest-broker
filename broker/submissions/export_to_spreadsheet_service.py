@@ -64,7 +64,13 @@ class ExportToSpreadsheetService:
             "schema_type": "file",
             "file_core": {
                 "file_name": spreadsheet_details.filename,
-                "format": "xlsx"
+                "format": "xlsx",
+                "file_source": "DCP/2 Ingest",
+                "content_description": {
+                    "text": "metadata spreadsheet",
+                    "ontology": "data:2193",
+                    "ontology_label": "Database entry metadata"
+                }
             }
         }
 
