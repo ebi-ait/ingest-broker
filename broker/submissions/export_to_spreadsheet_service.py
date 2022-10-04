@@ -51,7 +51,8 @@ class ExportToSpreadsheetService:
         # https://schema.humancellatlas.org/type/file/2.5.0/supplementary_file
         spreadsheet_payload = self.build_supplementary_file_payload(spreadsheet_details)
         # POST /submission/<id>/files
-        #  payload as body
+        self.ingest_api.put(f'/submission/{submission_uuid}/files/', spreadsheet_payload)
+        # payload as body
         finished_date = datetime.now(timezone.utc)
         self._patch(submission_url, create_date, finished_date)
 
