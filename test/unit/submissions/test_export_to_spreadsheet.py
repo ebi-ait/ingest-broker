@@ -4,6 +4,7 @@ from http import HTTPStatus
 from unittest import TestCase
 from unittest.mock import patch, MagicMock, Mock
 
+from broker.submissions import ExportToSpreadsheetService
 from broker_app import create_app
 
 
@@ -17,6 +18,7 @@ class ExportToSpreadsheetTestCase(TestCase):
         self._app = create_app()
         self._app.config["TESTING"] = True
         self._app.testing = True
+        self._app.SPREADSHEET_STORAGE_DIR = 'mock_storage_dir'
 
         self.mock_submission = {
             'lastSpreadsheetGenerationJob': {
@@ -84,8 +86,9 @@ class ExportToSpreadsheetTestCase(TestCase):
             # then
             self.assertEqual(response.status_code, HTTPStatus.ACCEPTED)
 
-    @patch('broker.submissions.ExportToSpreadsheetService.async_export_and_save')
-    def test_generate_spreadsheet__accepted__finished(self, mock_export):
+    @patch('broker.submissions.ExportToSpreadsheetService.async_export_and_save',
+           ExportToSpreadsheetService.export_and_save)
+    def test_generate_spreadsheet__accepted__finished(self):
         # given
         self.mock_submission = {
             'lastSpreadsheetGenerationJob': {
@@ -93,8 +96,6 @@ class ExportToSpreadsheetTestCase(TestCase):
                 'finishedDate': '2022-01-27T12:00:58.417Z'
             }
         }
-        self.mock_ingest.get_submission_by_uuid = Mock(return_value=self.mock_submission)
-
         submission_id = 'xyz-001'
 
         with self._app.test_client() as app:
@@ -103,15 +104,16 @@ class ExportToSpreadsheetTestCase(TestCase):
 
             # then
             self.assertEqual(response.status_code, HTTPStatus.ACCEPTED)
-            mock_export.assert_called_once()
+            self.mock_ingest.assert_called_once_with(submission_id)
+            # ToDo: Build correct mocking of calls-to and responses-from ingest
 
-    @patch('broker.submissions.ExportToSpreadsheetService.async_export_and_save')
-    def test_generate_spreadsheet__accepted__not_created(self, mock_export):
+    @patch('broker.submissions.ExportToSpreadsheetService.async_export_and_save',
+           ExportToSpreadsheetService.export_and_save)
+    def test_generate_spreadsheet__accepted__not_created(self):
         # given
         self.mock_submission = {
             'lastSpreadsheetGenerationJob': None
         }
-        self.mock_ingest.get_submission_by_uuid = Mock(return_value=self.mock_submission)
         submission_id = 'xyz-001'
 
         with self._app.test_client() as app:
@@ -120,10 +122,11 @@ class ExportToSpreadsheetTestCase(TestCase):
 
             # then
             self.assertEqual(response.status_code, HTTPStatus.ACCEPTED)
-            mock_export.assert_called_once()
+            self.mock_ingest.assert_called_once_with(submission_id)
+            # ToDo: Build correct mocking of calls-to and responses-from ingest
 
     @patch('broker.submissions.ExportToSpreadsheetService.async_export_and_save')
-    def test_generate_spreadsheet__accepted__already_created(self, mock_export):
+    def test_generate_spreadsheet__accepted__already_created(self, mock_export: Mock):
         # given
         self.mock_submission = {
             'lastSpreadsheetGenerationJob': {
@@ -141,6 +144,7 @@ class ExportToSpreadsheetTestCase(TestCase):
             # then
             self.assertEqual(response.status_code, HTTPStatus.ACCEPTED)
             mock_export.assert_not_called()
+            self.mock_ingest.assert_not_called()
 
 
 if __name__ == '__main__':
