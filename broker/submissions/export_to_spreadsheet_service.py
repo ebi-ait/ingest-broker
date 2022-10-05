@@ -33,30 +33,36 @@ class ExportToSpreadsheetService:
             submission_url = submission['_links']['self']['href']
         except Exception as e:
             self.logger.error(e)
-            raise Exception(f'An error occurred in retrieving the submission with uuid {submission_uuid}: {str(e)}')
+            raise Exception(f'An error occurred in retrieving the submission with uuid {submission_uuid}: {str(e)}') from e
 
-        create_date = datetime.now(timezone.utc)
-
-        self._patch(submission_url, create_date)
-
+        create_date = self.update_spreadsheet_start(submission_url)
         spreadsheet_details = self.get_spreadsheet_details(create_date, storage_dir, submission_uuid)
-
         workbook = self.export(submission_uuid)
+        self.save_spreadsheet(spreadsheet_details, workbook)
+        self.link_spreadsheet(spreadsheet_details, submission_uuid)
+        self.update_spreadsheet_finish(create_date, submission_url)
+        self.copy_to_s3_staging_area(spreadsheet_details, submission_uuid)
+        self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
 
+    def save_spreadsheet(self, spreadsheet_details, workbook):
         os.makedirs(spreadsheet_details.directory, exist_ok=True)
         workbook.save(spreadsheet_details.filepath)
 
-        # dcp-845 - spreadsheet in staging area
-        # create a file payload that adhere to the schema
-        # https://schema.humancellatlas.org/type/file/2.5.0/supplementary_file
-        spreadsheet_payload = self.build_supplementary_file_payload(spreadsheet_details)
-        # POST /submission/<id>/files
-        self.ingest_api.post(f'/submission/{submission_uuid}/files/', spreadsheet_payload)
-        # payload as body
+    def update_spreadsheet_finish(self, create_date, submission_url):
         finished_date = datetime.now(timezone.utc)
         self._patch(submission_url, create_date, finished_date)
 
-        self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
+    def link_spreadsheet(self, spreadsheet_details, submission_uuid):
+        spreadsheet_payload = self.build_supplementary_file_payload(spreadsheet_details)
+        self.ingest_api.post(f'/submission/{submission_uuid}/files/', spreadsheet_payload)
+        submission = self.api.get_submission_by_uuid(submission_uuid)
+
+        self.ingest_api.post(f'/projects/')
+
+    def update_spreadsheet_start(self, submission_url):
+        create_date = datetime.now(timezone.utc)
+        self._patch(submission_url, create_date)
+        return create_date
 
     def build_supplementary_file_payload(self, spreadsheet_details):
         return {
@@ -97,3 +103,7 @@ class ExportToSpreadsheetService:
     def async_export_and_save(self, submission_uuid: str, storage_dir: str):
         thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
         thread.start()
+
+    def copy_to_s3_staging_area(self, spreadsheet_details, submission_uuid):
+        submission = self.api.get_submission_by_uuid(submission_uuid)
+        raise RuntimeError("not implemented yet")
