@@ -4,7 +4,10 @@ import os
 import threading
 from collections import namedtuple
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
+import boto3 as boto3
+from botocore.exceptions import ClientError
 from ingest.api.ingestapi import IngestApi
 from ingest.downloader.data_collector import DataCollector
 from ingest.downloader.downloader import XlsDownloader
@@ -13,11 +16,29 @@ from ingest.utils.date import date_to_json_string
 
 class ExportToSpreadsheetService:
 
-    def __init__(self, ingest_api: IngestApi):
+    def __init__(self, ingest_api: IngestApi, app=None):
+        self.app = None
+        self.config = None
+
         self.ingest_api = ingest_api
         self.data_collector = DataCollector(self.ingest_api)
         self.downloader = XlsDownloader()
         self.logger = logging.getLogger(__name__)
+        if app:
+            self.init_app(app)
+
+    def init_app(self, app):
+        '''
+        proper way to configure service classes used by flask
+        https://flask.palletsprojects.com/en/2.1.x/extensions/
+        :param app:
+        :return:
+        '''
+        self.app = app
+        self.config = {
+            "AWS_ACCESS_KEY_ID": self.app.config.AWS_ACCESS_KEY_ID,
+            "AWS_ACCESS_KEY_SECRET": self.app.config.AWS_ACCESS_KEY_SECRET
+        }
 
     def export(self, submission_uuid: str):
         entity_dict = self.data_collector.collect_data_by_submission_uuid(submission_uuid)
@@ -39,9 +60,9 @@ class ExportToSpreadsheetService:
         spreadsheet_details = self.get_spreadsheet_details(create_date, storage_dir, submission_uuid)
         workbook = self.export(submission_uuid)
         self.save_spreadsheet(spreadsheet_details, workbook)
-        self.link_spreadsheet(spreadsheet_details, submission_uuid)
+        self.link_spreadsheet(spreadsheet_details, submission_url, submission)
         self.update_spreadsheet_finish(create_date, submission_url)
-        self.copy_to_s3_staging_area(spreadsheet_details, submission_uuid)
+        self.copy_to_s3_staging_area(spreadsheet_details, submission)
         self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
 
     def save_spreadsheet(self, spreadsheet_details, workbook):
@@ -52,13 +73,16 @@ class ExportToSpreadsheetService:
         finished_date = datetime.now(timezone.utc)
         self._patch(submission_url, create_date, finished_date)
 
-    def link_spreadsheet(self, spreadsheet_details, submission_uuid):
+    def link_spreadsheet(self, spreadsheet_details, submission_url, submission):
         spreadsheet_payload = self.build_supplementary_file_payload(spreadsheet_details)
-        self.ingest_api.post(f'/submission/{submission_uuid}/files/', spreadsheet_payload)
-        submission = self.api.get_submission_by_uuid(submission_uuid)
-
-        # TODO: find project id, build payload
-        self.ingest_api.post(f'/projects/')
+        submission_files_url = self.ingest_api.get_link_in_submission(submission_url, 'files')
+        file_entity = self.ingest_api.post(submission_files_url, spreadsheet_payload)
+        project = self.ingest_api.get_related_entities(entity=submission,
+                                                       relation='projects',
+                                                       entity_type='projects')[0]
+        self.ingest_api.link_entity(from_entity=project,
+                                    to_entity=file_entity,
+                                    relationship='supplementaryFiles')
 
     def update_spreadsheet_start(self, submission_url):
         create_date = datetime.now(timezone.utc)
@@ -105,6 +129,22 @@ class ExportToSpreadsheetService:
         thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
         thread.start()
 
-    def copy_to_s3_staging_area(self, spreadsheet_details, submission_uuid):
-        submission = self.api.get_submission_by_uuid(submission_uuid)
-        raise RuntimeError("not implemented yet")
+    def copy_to_s3_staging_area(self, spreadsheet_details, submission):
+        staging_area_location = submission['stagingDetails']['stagingAreaLocation']
+        staging_area_url = urlparse(staging_area_location)
+        bucket = staging_area_url.netloc
+        object_name = f'{staging_area_url.path.lstrip("/")}/{spreadsheet_details.filename}'
+        s3_client = self.init_s3_client()
+        response = None
+        try:
+            response = s3_client.upload_file(filename=spreadsheet_details.filepath,
+                                             bucket=bucket,
+                                             key=object_name)
+            # TODO: add logging
+        except ClientError as e:
+            logging.error(f's3 response: {response}', e)
+
+    def init_s3_client(self):
+        return boto3.client('s3',
+                            aws_access_key_id=self.config.AWS_ACCESS_KEY_ID,
+                            aws_secret_access_key=self.config.AWS_ACCESS_KEY_SECRET)

@@ -1,3 +1,4 @@
+boto3==1.24.87
 click==6.7
 et-xmlfile==1.0.1
 Flask-Cors==3.0.3
@@ -15,4 +16,4 @@ mock~=3.0.5
 dataclasses~=0.6
 argparse~=1.4.0
 jsonref~=0.2
-geo-to-hca
+geo-to-hca~=1.0.20
