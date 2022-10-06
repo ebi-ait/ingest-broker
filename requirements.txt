@@ -1,4 +1,4 @@
-boto3==1.24.70
+boto3==1.24.87
 click==6.7
 et-xmlfile==1.0.1
 Flask-Cors==3.0.3
