@@ -24,7 +24,7 @@ def generate_spreadsheet(submission_uuid):
 
     message = 'The spreadsheet is being generated.'
     if job_not_created(spreadsheet_job) or job_finished(spreadsheet_job):
-        spreadsheet_export_service = ExportToSpreadsheetService(app.ingest_api)
+        spreadsheet_export_service = ExportToSpreadsheetService(app)
         spreadsheet_export_service.async_export_and_save(submission_uuid, app.SPREADSHEET_STORAGE_DIR)
         return response_json(HTTPStatus.ACCEPTED, {'message': message})
     else:

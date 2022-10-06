@@ -16,12 +16,12 @@ from ingest.utils.date import date_to_json_string
 
 class ExportToSpreadsheetService:
 
-    def __init__(self, ingest_api: IngestApi, app=None):
+    def __init__(self, app=None):
+        self.data_collector = None
+        self.ingest_api = None
         self.app = None
         self.config = None
 
-        self.ingest_api = ingest_api
-        self.data_collector = DataCollector(self.ingest_api)
         self.downloader = XlsDownloader()
         self.logger = logging.getLogger(__name__)
         if app:
@@ -39,6 +39,8 @@ class ExportToSpreadsheetService:
             "AWS_ACCESS_KEY_ID": self.app.config.AWS_ACCESS_KEY_ID,
             "AWS_ACCESS_KEY_SECRET": self.app.config.AWS_ACCESS_KEY_SECRET
         }
+        self.ingest_api = app.ingest_api
+        self.data_collector = DataCollector(self.ingest_api)
 
     def export(self, submission_uuid: str):
         entity_dict = self.data_collector.collect_data_by_submission_uuid(submission_uuid)
@@ -90,6 +92,7 @@ class ExportToSpreadsheetService:
         return create_date
 
     def build_supplementary_file_payload(self, spreadsheet_details):
+        self.ingest_api.get_latest_schema_url()
         return {
             "describedBy": "https://schema.humancellatlas.org/type/file/2.5.0/supplementary_file",
             "schema_type": "file",
@@ -140,9 +143,10 @@ class ExportToSpreadsheetService:
             response = s3_client.upload_file(filename=spreadsheet_details.filepath,
                                              bucket=bucket,
                                              key=object_name)
-            # TODO: add logging
+            self.logger.info(f'uploaded metadata spreadsheet {spreadsheet_details.filename} '
+                             f'to upload area {staging_area_location}')
         except ClientError as e:
-            logging.error(f's3 response: {response}', e)
+            self.logger.error(f's3 response: {response}', e)
 
     def init_s3_client(self):
         return boto3.client('s3',
