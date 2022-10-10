@@ -1,10 +1,9 @@
 import logging
-import os
 import threading
 import time
 
-from ingest.api.ingestapi import IngestApi
-from ingest.importer.importer import XlsImporter
+from hca_ingest.api.ingestapi import IngestApi
+from hca_ingest.importer.importer import XlsImporter
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 

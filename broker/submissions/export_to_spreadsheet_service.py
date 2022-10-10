@@ -8,10 +8,10 @@ from urllib.parse import urlparse
 
 import boto3 as boto3
 from botocore.exceptions import ClientError
-from ingest.api.ingestapi import IngestApi
-from ingest.downloader.data_collector import DataCollector
-from ingest.downloader.downloader import XlsDownloader
-from ingest.utils.date import date_to_json_string
+from hca_ingest.api.ingestapi import IngestApi
+from hca_ingest.downloader.data_collector import DataCollector
+from hca_ingest.downloader.downloader import XlsDownloader
+from hca_ingest.utils.date import date_to_json_string
 
 
 class ExportToSpreadsheetService:

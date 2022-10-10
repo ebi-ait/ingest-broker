@@ -10,7 +10,7 @@ import jsonpickle
 from flask import Flask, request, redirect, send_file
 from flask import json
 from flask_cors import CORS, cross_origin
-from ingest.api.ingestapi import IngestApi
+from hca_ingest.api.ingestapi import IngestApi
 
 from broker.common.util import response_json
 from broker.schemas.routes import schemas_bp

@@ -6,9 +6,9 @@ from http import HTTPStatus
 from flask import Blueprint, send_file, request
 from flask_cors import cross_origin
 from geo_to_hca import geo_to_hca
-from ingest.api.ingestapi import IngestApi
+from hca_ingest.api.ingestapi import IngestApi
 
-from ingest.importer.importer import XlsImporter
+from hca_ingest.importer.importer import XlsImporter
 from broker.common.util import response_json
 from broker.import_geo.exceptions import ImportGeoHttpError, InvalidGeoAccession, GenerateGeoWorkbookError, \
     ImportProjectWorkbookError

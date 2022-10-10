@@ -4,7 +4,7 @@ from http import HTTPStatus
 import jsonpickle
 from flask import Blueprint, send_file
 from flask import current_app as app
-from ingest.utils.date import parse_date_string
+from hca_ingest.utils.date import parse_date_string
 
 from broker.common.util import response_json
 from broker.service.spreadsheet_storage import SubmissionSpreadsheetDoesntExist

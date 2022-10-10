@@ -2,11 +2,11 @@ import os
 from unittest import TestCase, skip
 from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator, SpreadsheetSpec, TypeSpec, \
     LinkSpec, IncludeSomeModules, IncludeAllModules, TemplateTab, TemplateYaml
-from ingest.api.ingestapi import IngestApi
-from ingest.template.schema_template import SchemaTemplate
+from hca_ingest.api.ingestapi import IngestApi
+from hca_ingest.template.schema_template import SchemaTemplate
 
-from ingest.template.vanilla_spreadsheet_builder import VanillaSpreadsheetBuilder
-from ingest.template.tab_config import TabConfig
+from hca_ingest.template.vanilla_spreadsheet_builder import VanillaSpreadsheetBuilder
+from hca_ingest.template.tab_config import TabConfig
 
 import pandas as pd
 

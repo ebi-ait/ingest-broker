@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from flask import Blueprint, current_app, request
 from flask_cors import cross_origin
-from ingest.api.ingestapi import IngestApi
-from ingest.importer.importer import XlsImporter
+from hca_ingest.api.ingestapi import IngestApi
+from hca_ingest.importer.importer import XlsImporter
 
 from broker.common.util import response_json
 from broker.service.spreadsheet_storage import SpreadsheetStorageService
