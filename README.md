@@ -6,17 +6,52 @@
 # HCA Ingest Broker
 
 Web endpoint for submitting spreadsheets for HCA Ingest and basic admin UI. 
- 
-To run scripts locally you'll need Python 3.6 and all the dependencies in [requirements.txt](requirements.txt).
 
+## Web Application 
+
+### Requirements
+
+Requirements for this project are listed in 2 files: `requirements.txt` and `requirements-dev.txt`.
+The `requirements-dev.txt` file contains dependencies specific for development
+
+The requirement files (`requirements.txt`, `requirements-dev.txt`) are generated using `pip-compile` from [pip-tools](https://github.com/jazzband/pip-tools) 
+```bash
+pip-compile requirements.in
+pip-compile requirements-dev.in
 ```
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+The direct dependencies are listed in `requirements.in`, `requirements-dev.in` input files.
+
+#### Install dependencies
+
+* by using `pip-sync` from `pip-tools`
+```bash
+pip-sync requirements.txt requirements-dev.txt
+```
+* or by just using `pip install` 
+```bash
+    pip install -r requirements.txt
+    pip install -r requirements-dev.txt
 ```
 
-# Web Application 
+#### Upgrade dependencies
 
-## Running with Python 
+To update all packages, periodically re-run `pip-compile --upgrade`
+
+To update a specific package to the latest or a specific version use the `--upgrade-package` or `-P` flag:
+
+```bash
+pip-compile --upgrade-package requests
+```
+
+See more options in the pip-compile [documentation](https://github.com/jazzband/pip-tools#updating-requirements) .
+
+### Running unit tests
+
+```bash
+nosetests test/unit/
+```
+
+### Running with Python 
 
 Start the web application with 
 
@@ -24,7 +59,7 @@ Start the web application with
 python broker/broker_app.py
 ```
 
-## Running with Flask's CLI
+### Running with Flask's CLI
 
 You can use the [flask cli](https://flask.palletsprojects.com/en/2.0.x/cli) to start your app.
 
@@ -44,7 +79,7 @@ You can set this and other app environment variables such as `INGEST_API` in a `
 See the [template](.flaskenv.template).
 See more in [flask's docs](https://flask.palletsprojects.com/en/2.0.x/cli/#environment-variables-from-dotenv)
 
-## Running With Docker
+### Running With Docker
 Alternatively, you can build and run the app with Docker. To run the web application with Docker for build the Docker image with 
 
 ```bash
@@ -64,12 +99,6 @@ docker run -p 5000:5000 -e INGEST_API=https://api.ingest.dev.archive.data.humanc
 
 The application will be available at http://localhost:5000
 
-# Docs
+## Docs
 
 see [design docs](doc/)
-
-## Running unit tests
-
-```bash
-nosetests test/unit/
-```
