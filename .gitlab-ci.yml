@@ -7,8 +7,6 @@ Test:
   variables:
     INGEST_API : https://api.ingest.dev.archive.data.humancellatlas.org/
   before_script:
-    - python -m venv ./venv
-    - source venv/bin/activate
     - pip install --upgrade pip
     - pip install pip-tools
     - pip-sync requirements.txt requirements-dev.txt

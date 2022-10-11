@@ -4,11 +4,11 @@ LABEL maintainer="hca-ingest-dev@ebi.ac.uk"
 RUN mkdir /app
 WORKDIR /app/
 
-RUN apt-get update && \
-    apt-get install -y git
+RUN pip install --upgrade pip
+RUN pip install pip-tools
 
 COPY requirements.txt /app/requirements.txt
-RUN pip install -r /app/requirements.txt
+RUN pip-sync /app/requirements.txt
 
 COPY broker /app/broker
 COPY broker_app.py /app/broker_app.py
