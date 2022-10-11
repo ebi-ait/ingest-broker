@@ -24,7 +24,7 @@ numpy==1.23.3
     # via
     #   -c requirements.txt
     #   pandas
-pandas==1.1.5
+pandas==1.5.0
     # via
     #   -c requirements.txt
     #   -r requirements-dev.in
