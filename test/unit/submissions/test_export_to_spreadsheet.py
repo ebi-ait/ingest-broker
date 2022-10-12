@@ -27,15 +27,16 @@ class ExportToSpreadsheetTestCase(BrokerAppTest):
             mimetype='application/json'
         )
 
-        submission_id = 'xyz-001'
+        submission_uuid = 'xyz-001'
 
         with self._app.test_client() as app:
             # when
-            response = app.get(f'/submissions/{submission_id}/spreadsheet')
+            response = app.get(f'/submissions/{submission_uuid}/spreadsheet')
 
-            # then
-            self.assertEqual(response.status_code, HTTPStatus.OK)
-            mock_send_file.assert_called_once()
+        # then
+        self.mock_ingest.get_submission_by_uuid.assert_called_once_with(submission_uuid)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        mock_send_file.assert_called_once()
 
     @patch('broker.submissions.routes.send_file')
     def test_download_spreadsheet__not_found(self, mock_send_file):
@@ -43,13 +44,14 @@ class ExportToSpreadsheetTestCase(BrokerAppTest):
         self.mock_submission = {}
         self.mock_ingest.get_submission_by_uuid = Mock(return_value=self.mock_submission)
 
-        submission_id = 'xyz-001'
+        submission_uuid = 'xyz-001'
 
         with self._app.test_client() as app:
             # when
-            response = app.get(f'/submissions/{submission_id}/spreadsheet')
+            response = app.get(f'/submissions/{submission_uuid}/spreadsheet')
 
             # then
+            self.mock_ingest.get_submission_by_uuid.assert_called_once_with(submission_uuid)
             self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
             mock_send_file.assert_not_called()
 
@@ -67,13 +69,14 @@ class ExportToSpreadsheetTestCase(BrokerAppTest):
 
         mock_workbook = MagicMock()
         mock_export.return_value = mock_workbook
-        submission_id = 'xyz-001'
+        submission_uuid = 'xyz-001'
 
         with self._app.test_client() as app:
             # when
-            response = app.get(f'/submissions/{submission_id}/spreadsheet')
+            response = app.get(f'/submissions/{submission_uuid}/spreadsheet')
 
             # then
+            self.mock_ingest.get_submission_by_uuid.assert_called_once_with(submission_uuid)
             self.assertEqual(response.status_code, HTTPStatus.ACCEPTED)
 
     @patch('broker.submissions.ExportToSpreadsheetService.async_export_and_save',
