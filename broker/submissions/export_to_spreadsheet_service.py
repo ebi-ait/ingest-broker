@@ -44,12 +44,9 @@ class ExportToSpreadsheetService:
         self.ingest_api = app.ingest_api
         self.data_collector = DataCollector(self.ingest_api)
 
-    def export(self, submission_uuid: str):
-        entity_dict = self.data_collector.collect_data_by_submission_uuid(submission_uuid)
-        entity_list = list(entity_dict.values())
-        flattened_json = self.downloader.convert_json(entity_list)
-        workbook = self.downloader.create_workbook(flattened_json)
-        return workbook
+    def async_export_and_save(self, submission_uuid: str, storage_dir: str):
+        thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
+        thread.start()
 
     def export_and_save(self, submission_uuid: str, storage_dir: str):
         self.logger.info(f'Exporting submission {submission_uuid}')
@@ -74,6 +71,13 @@ class ExportToSpreadsheetService:
         finished_date = datetime.now(timezone.utc)
         self.__patch_file_generation(submission_url, create_date, finished_date)
 
+    def export(self, submission_uuid: str):
+        entity_dict = self.data_collector.collect_data_by_submission_uuid(submission_uuid)
+        entity_list = list(entity_dict.values())
+        flattened_json = self.downloader.convert_json(entity_list)
+        workbook = self.downloader.create_workbook(flattened_json)
+        return workbook
+
     def link_spreadsheet(self, submission_url, submission, filename):
         schema_url = self.ingest_api.get_latest_schema_url('type', 'file', 'supplementary_file')
         spreadsheet_payload = self.build_supplementary_file_payload(schema_url, filename)
@@ -94,10 +98,6 @@ class ExportToSpreadsheetService:
         create_date = datetime.now(timezone.utc)
         self.__patch_file_generation(submission_url, create_date)
         return create_date
-
-    def async_export_and_save(self, submission_uuid: str, storage_dir: str):
-        thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
-        thread.start()
 
     def copy_to_s3_staging_area(self, spreadsheet_details: SpreadsheetDetails, staging_area):
         staging_area_url = urlparse(staging_area)
