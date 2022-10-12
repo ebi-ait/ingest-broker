@@ -76,7 +76,7 @@ class ExportToSpreadsheetService:
 
     def update_spreadsheet_finish(self, create_date, submission_url):
         finished_date = datetime.now(timezone.utc)
-        self._patch(submission_url, create_date, finished_date)
+        self.__patch_file_generation(submission_url, create_date, finished_date)
 
     def link_spreadsheet(self, submission_url, submission, filename):
         schema_url = self.ingest_api.get_latest_schema_url('type', 'file', 'supplementary_file')
@@ -96,7 +96,7 @@ class ExportToSpreadsheetService:
 
     def update_spreadsheet_start(self, submission_url):
         create_date = datetime.now(timezone.utc)
-        self._patch(submission_url, create_date)
+        self.__patch_file_generation(submission_url, create_date)
         return create_date
 
     @staticmethod
@@ -107,15 +107,6 @@ class ExportToSpreadsheetService:
         filepath = f'{directory}/{filename}'
 
         return SpreadsheetDetails(filename, filepath, directory)
-
-    def _patch(self, submission_url, create_date, finished_date=None):
-        patch = {
-            'lastSpreadsheetGenerationJob': {
-                'finishedDate': date_to_json_string(finished_date) if finished_date else None,
-                'createdDate': date_to_json_string(create_date)
-            }
-        }
-        self.ingest_api.patch(submission_url, json=patch)
 
     def async_export_and_save(self, submission_uuid: str, storage_dir: str):
         thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
@@ -140,6 +131,15 @@ class ExportToSpreadsheetService:
         return boto3.client('s3',
                             aws_access_key_id=self.config.AWS_ACCESS_KEY_ID,
                             aws_secret_access_key=self.config.AWS_ACCESS_KEY_SECRET)
+
+    def __patch_file_generation(self, submission_url, create_date, finished_date=None):
+        patch = {
+            'lastSpreadsheetGenerationJob': {
+                'finishedDate': date_to_json_string(finished_date) if finished_date else None,
+                'createdDate': date_to_json_string(create_date)
+            }
+        }
+        self.ingest_api.patch(submission_url, json=patch)
 
     @staticmethod
     def build_supplementary_file_payload(schema_url, filename):
