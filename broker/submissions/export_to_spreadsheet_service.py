@@ -13,6 +13,9 @@ from hca_ingest.downloader.downloader import XlsDownloader
 from hca_ingest.utils.date import date_to_json_string
 
 
+SpreadsheetDetails = namedtuple("SpreadsheetDetails", "filename filepath directory")
+
+
 class ExportToSpreadsheetService:
 
     def __init__(self, app=None):
@@ -66,7 +69,7 @@ class ExportToSpreadsheetService:
         self.copy_to_s3_staging_area(spreadsheet_details, submission)
         self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
 
-    def save_spreadsheet(self, spreadsheet_details, workbook):
+    def save_spreadsheet(self, spreadsheet_details: SpreadsheetDetails, workbook):
         os.makedirs(spreadsheet_details.directory, exist_ok=True)
         workbook.save(spreadsheet_details.filepath)
 
@@ -74,7 +77,7 @@ class ExportToSpreadsheetService:
         finished_date = datetime.now(timezone.utc)
         self._patch(submission_url, create_date, finished_date)
 
-    def link_spreadsheet(self, spreadsheet_details, submission_url, submission):
+    def link_spreadsheet(self, spreadsheet_details: SpreadsheetDetails, submission_url, submission):
         spreadsheet_payload = self.build_supplementary_file_payload(spreadsheet_details)
         submission_files_url = self.ingest_api.get_link_in_submission(submission_url, 'files')
         file_entity = self.ingest_api.post(submission_files_url, json=spreadsheet_payload)
@@ -90,7 +93,7 @@ class ExportToSpreadsheetService:
         self._patch(submission_url, create_date)
         return create_date
 
-    def build_supplementary_file_payload(self, spreadsheet_details):
+    def build_supplementary_file_payload(self, spreadsheet_details: SpreadsheetDetails):
         self.ingest_api.get_latest_schema_url()
         return {
             "describedBy": "https://schema.humancellatlas.org/type/file/2.5.0/supplementary_file",
@@ -108,15 +111,13 @@ class ExportToSpreadsheetService:
         }
 
     @staticmethod
-    def get_spreadsheet_details(create_date, storage_dir, submission_uuid):
+    def get_spreadsheet_details(create_date, storage_dir, submission_uuid) -> SpreadsheetDetails:
         directory = f'{storage_dir}/{submission_uuid}/downloads/'
         timestamp = create_date.strftime("%Y%m%d-%H%M%S")
         filename = f'{submission_uuid}_{timestamp}.xlsx'
         filepath = f'{directory}/{filename}'
 
-        SpreadsheetDetails = namedtuple("File", "filename filepath directory")
-        details = SpreadsheetDetails(filename, filepath, directory)
-        return details
+        return SpreadsheetDetails(filename, filepath, directory)
 
     def _patch(self, submission_url, create_date, finished_date=None):
         patch = {
@@ -131,7 +132,7 @@ class ExportToSpreadsheetService:
         thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
         thread.start()
 
-    def copy_to_s3_staging_area(self, spreadsheet_details, submission):
+    def copy_to_s3_staging_area(self, spreadsheet_details: SpreadsheetDetails, submission):
         staging_area_location = submission['stagingDetails']['stagingAreaLocation']
         staging_area_url = urlparse(staging_area_location)
         bucket = staging_area_url.netloc
