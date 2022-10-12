@@ -45,12 +45,6 @@ pip-compile --upgrade-package requests
 
 See more options in the pip-compile [documentation](https://github.com/jazzband/pip-tools#updating-requirements) .
 
-### Running unit tests
-
-```bash
-nosetests test/unit/
-```
-
 ### Running with Python 
 
 Start the web application with 
@@ -98,6 +92,19 @@ docker run -p 5000:5000 -e INGEST_API=https://api.ingest.dev.archive.data.humanc
 ```
 
 The application will be available at http://localhost:5000
+
+## Tests
+### Running all tests
+Will send requests to ingest core on dev
+```bash
+pytest
+```
+
+### Running unit tests
+Isolated, no external communication required
+```bash
+pytest test/unit/
+```
 
 ## Docs
 
