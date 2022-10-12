@@ -56,6 +56,7 @@ class ExportToSpreadsheetService:
         try:
             submission = self.ingest_api.get_submission_by_uuid(submission_uuid)
             submission_url = submission['_links']['self']['href']
+            staging_area = submission['stagingDetails']['stagingAreaLocation']
         except Exception as e:
             self.logger.error(e)
             raise Exception(f'An error occurred in retrieving the submission with uuid {submission_uuid}: {str(e)}') from e
@@ -66,7 +67,7 @@ class ExportToSpreadsheetService:
         self.save_spreadsheet(spreadsheet_details, workbook)
         self.link_spreadsheet(submission_url, submission, spreadsheet_details.filename)
         self.update_spreadsheet_finish(create_date, submission_url)
-        self.copy_to_s3_staging_area(spreadsheet_details, submission)
+        self.copy_to_s3_staging_area(spreadsheet_details, staging_area)
         self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
 
     def save_spreadsheet(self, spreadsheet_details: SpreadsheetDetails, workbook):
@@ -120,9 +121,8 @@ class ExportToSpreadsheetService:
         thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
         thread.start()
 
-    def copy_to_s3_staging_area(self, spreadsheet_details: SpreadsheetDetails, submission):
-        staging_area_location = submission['stagingDetails']['stagingAreaLocation']
-        staging_area_url = urlparse(staging_area_location)
+    def copy_to_s3_staging_area(self, spreadsheet_details: SpreadsheetDetails, staging_area):
+        staging_area_url = urlparse(staging_area)
         bucket = staging_area_url.netloc
         object_name = f'{staging_area_url.path.lstrip("/")}/{spreadsheet_details.filename}'
         s3_client = self.init_s3_client()
@@ -132,7 +132,7 @@ class ExportToSpreadsheetService:
                                              bucket=bucket,
                                              key=object_name)
             self.logger.info(f'uploaded metadata spreadsheet {spreadsheet_details.filename} '
-                             f'to upload area {staging_area_location}')
+                             f'to upload area {staging_area}')
         except ClientError as e:
             self.logger.error(f's3 response: {response}', e)
 
@@ -140,6 +140,7 @@ class ExportToSpreadsheetService:
         return boto3.client('s3',
                             aws_access_key_id=self.config.AWS_ACCESS_KEY_ID,
                             aws_secret_access_key=self.config.AWS_ACCESS_KEY_SECRET)
+
     @staticmethod
     def build_supplementary_file_payload(schema_url, filename):
         return {
