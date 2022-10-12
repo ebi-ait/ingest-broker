@@ -99,15 +99,6 @@ class ExportToSpreadsheetService:
         self.__patch_file_generation(submission_url, create_date)
         return create_date
 
-    @staticmethod
-    def get_spreadsheet_details(create_date, storage_dir, submission_uuid) -> SpreadsheetDetails:
-        directory = f'{storage_dir}/{submission_uuid}/downloads/'
-        timestamp = create_date.strftime("%Y%m%d-%H%M%S")
-        filename = f'{submission_uuid}_{timestamp}.xlsx'
-        filepath = f'{directory}/{filename}'
-
-        return SpreadsheetDetails(filename, filepath, directory)
-
     def async_export_and_save(self, submission_uuid: str, storage_dir: str):
         thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
         thread.start()
@@ -140,6 +131,15 @@ class ExportToSpreadsheetService:
             }
         }
         self.ingest_api.patch(submission_url, json=patch)
+
+    @staticmethod
+    def get_spreadsheet_details(create_date, storage_dir, submission_uuid) -> SpreadsheetDetails:
+        directory = f'{storage_dir}/{submission_uuid}/downloads/'
+        timestamp = create_date.strftime("%Y%m%d-%H%M%S")
+        filename = f'{submission_uuid}_{timestamp}.xlsx'
+        filepath = f'{directory}/{filename}'
+
+        return SpreadsheetDetails(filename, filepath, directory)
 
     @staticmethod
     def build_supplementary_file_payload(schema_url, filename):
