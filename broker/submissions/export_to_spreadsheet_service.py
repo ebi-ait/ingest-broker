@@ -64,7 +64,7 @@ class ExportToSpreadsheetService:
         spreadsheet_details = self.get_spreadsheet_details(create_date, storage_dir, submission_uuid)
         workbook = self.export(submission_uuid)
         self.save_spreadsheet(spreadsheet_details, workbook)
-        self.link_spreadsheet(spreadsheet_details, submission_url, submission)
+        self.link_spreadsheet(submission_url, submission, spreadsheet_details.filename)
         self.update_spreadsheet_finish(create_date, submission_url)
         self.copy_to_s3_staging_area(spreadsheet_details, submission)
         self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
@@ -77,38 +77,26 @@ class ExportToSpreadsheetService:
         finished_date = datetime.now(timezone.utc)
         self._patch(submission_url, create_date, finished_date)
 
-    def link_spreadsheet(self, spreadsheet_details: SpreadsheetDetails, submission_url, submission):
-        spreadsheet_payload = self.build_supplementary_file_payload(spreadsheet_details)
+    def link_spreadsheet(self, submission_url, submission, filename):
+        schema_url = self.ingest_api.get_latest_schema_url('type', 'file', 'supplementary_file')
+        spreadsheet_payload = self.build_supplementary_file_payload(schema_url, filename)
         submission_files_url = self.ingest_api.get_link_in_submission(submission_url, 'files')
         file_entity = self.ingest_api.post(submission_files_url, json=spreadsheet_payload)
-        project = self.ingest_api.get_related_entities(entity=submission,
-                                                       relation='projects',
-                                                       entity_type='projects')[0]
-        self.ingest_api.link_entity(from_entity=project,
-                                    to_entity=file_entity,
-                                    relationship='supplementaryFiles')
+        projects = self.ingest_api.get_related_entities(
+            entity=submission,
+            relation='projects',
+            entity_type='projects'
+        )
+        self.ingest_api.link_entity(
+            from_entity=projects[0],
+            to_entity=file_entity,
+            relationship='supplementaryFiles'
+        )
 
     def update_spreadsheet_start(self, submission_url):
         create_date = datetime.now(timezone.utc)
         self._patch(submission_url, create_date)
         return create_date
-
-    def build_supplementary_file_payload(self, spreadsheet_details: SpreadsheetDetails):
-        self.ingest_api.get_latest_schema_url()
-        return {
-            "describedBy": "https://schema.humancellatlas.org/type/file/2.5.0/supplementary_file",
-            "schema_type": "file",
-            "file_core": {
-                "file_name": spreadsheet_details.filename,
-                "format": "xlsx",
-                "file_source": "DCP/2 Ingest",
-                "content_description": {
-                    "text": "metadata spreadsheet",
-                    "ontology": "data:2193",
-                    "ontology_label": "Database entry metadata"
-                }
-            }
-        }
 
     @staticmethod
     def get_spreadsheet_details(create_date, storage_dir, submission_uuid) -> SpreadsheetDetails:
@@ -152,3 +140,19 @@ class ExportToSpreadsheetService:
         return boto3.client('s3',
                             aws_access_key_id=self.config.AWS_ACCESS_KEY_ID,
                             aws_secret_access_key=self.config.AWS_ACCESS_KEY_SECRET)
+    @staticmethod
+    def build_supplementary_file_payload(schema_url, filename):
+        return {
+            "describedBy": schema_url,
+            "schema_type": "file",
+            "file_core": {
+                "file_name": filename,
+                "format": "xlsx",
+                "file_source": "DCP/2 Ingest",
+                "content_description": {
+                    "text": "metadata spreadsheet",
+                    "ontology": "data:2193",
+                    "ontology_label": "Database entry metadata"
+                }
+            }
+        }
