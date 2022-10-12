@@ -115,9 +115,11 @@ class ExportToSpreadsheetService:
             self.logger.error(f's3 response: {response}', e)
 
     def init_s3_client(self):
-        return boto3.client('s3',
-                            aws_access_key_id=self.config.AWS_ACCESS_KEY_ID,
-                            aws_secret_access_key=self.config.AWS_ACCESS_KEY_SECRET)
+        return boto3.client(
+            's3',
+            aws_access_key_id=self.config.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=self.config.AWS_ACCESS_KEY_SECRET
+        )
 
     def __patch_file_generation(self, submission_url, create_date, finished_date=None):
         patch = {
