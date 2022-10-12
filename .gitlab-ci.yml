@@ -11,9 +11,7 @@ Test:
     - pip install pip-tools
     - pip-sync requirements.txt requirements-dev.txt
   script:
-    - nosetests --with-xunit
+    - pytest --junitxml=results.xml
   artifacts:
-    paths:
-      - nosetests.xml
     reports:
-      junit: nosetests.xml
+      junit: results.xml

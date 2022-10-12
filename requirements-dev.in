@@ -1,8 +1,8 @@
 -c requirements.txt
 coverage
-nose
 pylint
 pandas
 xlrd
 python-dotenv
 mock
+pytest
