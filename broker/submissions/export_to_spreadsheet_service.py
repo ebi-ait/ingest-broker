@@ -8,7 +8,6 @@ from urllib.parse import urlparse
 
 import boto3 as boto3
 from botocore.exceptions import ClientError
-from hca_ingest.api.ingestapi import IngestApi
 from hca_ingest.downloader.data_collector import DataCollector
 from hca_ingest.downloader.downloader import XlsDownloader
 from hca_ingest.utils.date import date_to_json_string
@@ -78,7 +77,7 @@ class ExportToSpreadsheetService:
     def link_spreadsheet(self, spreadsheet_details, submission_url, submission):
         spreadsheet_payload = self.build_supplementary_file_payload(spreadsheet_details)
         submission_files_url = self.ingest_api.get_link_in_submission(submission_url, 'files')
-        file_entity = self.ingest_api.post(submission_files_url, spreadsheet_payload)
+        file_entity = self.ingest_api.post(submission_files_url, json=spreadsheet_payload)
         project = self.ingest_api.get_related_entities(entity=submission,
                                                        relation='projects',
                                                        entity_type='projects')[0]
@@ -126,7 +125,7 @@ class ExportToSpreadsheetService:
                 'createdDate': date_to_json_string(create_date)
             }
         }
-        self.ingest_api.patch(submission_url, patch)
+        self.ingest_api.patch(submission_url, json=patch)
 
     def async_export_and_save(self, submission_uuid: str, storage_dir: str):
         thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
