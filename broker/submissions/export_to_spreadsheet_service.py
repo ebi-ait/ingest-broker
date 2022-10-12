@@ -30,12 +30,12 @@ class ExportToSpreadsheetService:
             self.init_app(app)
 
     def init_app(self, app):
-        '''
+        """
         proper way to configure service classes used by flask
         https://flask.palletsprojects.com/en/2.1.x/extensions/
         :param app:
         :return:
-        '''
+        """
         self.app = app
         self.config = {
             "AWS_ACCESS_KEY_ID": self.app.config.AWS_ACCESS_KEY_ID,
