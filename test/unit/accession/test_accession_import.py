@@ -2,6 +2,9 @@ import unittest
 from http import HTTPStatus
 from unittest import TestCase
 from unittest.mock import patch, MagicMock, Mock
+
+from hca_ingest.api.ingestapi import IngestApi
+
 from broker_app import create_app
 
 
@@ -11,7 +14,7 @@ class AccessionImport(TestCase):
     @patch('broker_app.SchemaService')
     @patch('broker_app.SpreadsheetGenerator')
     def setUp(self, xls_generator, schema_service, mock_ingest_api_constructor):
-        self.mock_ingest = Mock()
+        self.mock_ingest = Mock(Spec=IngestApi)
         mock_ingest_api_constructor.return_value = self.mock_ingest
         self._app = create_app()
         self._app.config["TESTING"] = True
