@@ -15,9 +15,7 @@ from hca_ingest.api.ingestapi import IngestApi
 from broker.import_geo.routes import import_geo_bp
 from broker.schemas.routes import schemas_bp
 from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator
-from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, \
-    SpreadsheetSpec, \
-    JobStatus
+from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, JobStatus
 from broker.service.summary_service import SummaryService
 from broker.submissions import submissions_bp
 from broker.upload import upload_bp

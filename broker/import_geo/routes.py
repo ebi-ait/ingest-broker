@@ -10,9 +10,8 @@ from geo_to_hca import geo_to_hca
 from hca_ingest.importer.importer import XlsImporter
 
 from broker.common.util import response_json
-from broker.import_geo.exceptions import ImportGeoHttpError, InvalidGeoAccession, \
-    GenerateGeoWorkbookError, \
-    ImportProjectWorkbookError
+from broker.import_geo.exceptions import ImportGeoHttpError, InvalidGeoAccession
+from broker.import_geo.exceptions import GenerateGeoWorkbookError, ImportProjectWorkbookError
 
 import_geo_bp = Blueprint(
     'import_geo', __name__, url_prefix='/'

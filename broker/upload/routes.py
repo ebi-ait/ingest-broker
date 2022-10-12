@@ -8,8 +8,7 @@ from hca_ingest.importer.importer import XlsImporter
 
 from broker.common.util import response_json
 from broker.service.spreadsheet_storage import SpreadsheetStorageService
-from broker.service.spreadsheet_upload_service import SpreadsheetUploadService, \
-    SpreadsheetUploadError
+from broker.service.spreadsheet_upload_service import SpreadsheetUploadService, SpreadsheetUploadError
 
 upload_bp = Blueprint(
     'upload', __name__, url_prefix='/'
