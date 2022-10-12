@@ -67,9 +67,10 @@ class ExportToSpreadsheetService:
         self.copy_to_s3_staging_area(spreadsheet_details, staging_area)
         self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
 
-    def update_spreadsheet_finish(self, create_date, submission_url):
-        finished_date = datetime.now(timezone.utc)
-        self.__patch_file_generation(submission_url, create_date, finished_date)
+    def update_spreadsheet_start(self, submission_url):
+        create_date = datetime.now(timezone.utc)
+        self.__patch_file_generation(submission_url, create_date)
+        return create_date
 
     def export(self, submission_uuid: str):
         entity_dict = self.data_collector.collect_data_by_submission_uuid(submission_uuid)
@@ -94,10 +95,9 @@ class ExportToSpreadsheetService:
             relationship='supplementaryFiles'
         )
 
-    def update_spreadsheet_start(self, submission_url):
-        create_date = datetime.now(timezone.utc)
-        self.__patch_file_generation(submission_url, create_date)
-        return create_date
+    def update_spreadsheet_finish(self, create_date, submission_url):
+        finished_date = datetime.now(timezone.utc)
+        self.__patch_file_generation(submission_url, create_date, finished_date)
 
     def copy_to_s3_staging_area(self, spreadsheet_details: SpreadsheetDetails, staging_area):
         staging_area_url = urlparse(staging_area)
