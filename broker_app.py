@@ -12,16 +12,15 @@ from flask import json
 from flask_cors import CORS, cross_origin
 from hca_ingest.api.ingestapi import IngestApi
 
-from broker.common.util import response_json
+from broker.import_geo.routes import import_geo_bp
 from broker.schemas.routes import schemas_bp
-from broker.service.schema_service import SchemaService
 from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator
-from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, \
+from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, \
+    SpreadsheetSpec, \
     JobStatus
 from broker.service.summary_service import SummaryService
 from broker.submissions import submissions_bp
 from broker.upload import upload_bp
-from broker.import_geo.routes import import_geo_bp
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 with open(f'{script_dir}/logging-config.json', 'rt') as config_file:
@@ -44,7 +43,7 @@ def add_routes(app):
     @app.route('/projects/<project_uuid>/summary', methods=['GET'])
     def project_summary(project_uuid):
         project = app.ingest_api.get_project_by_uuid(project_uuid)
-        summary = SummaryService().summary_for_project(project)
+        summary = SummaryService(app.ingest_api).summary_for_project(project)
 
         return app.response_class(
             response=jsonpickle.encode(summary, unpicklable=False),
@@ -129,6 +128,7 @@ Nothing else for you to do - check back later."
     app.config['CORS_HEADERS'] = 'Content-Type'
 
     app.ingest_api = IngestApi()
+    app.IngestApi = IngestApi
     spreadsheet_generator = SpreadsheetGenerator(app.ingest_api)
     app.spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, app.SPREADSHEET_STORAGE_DIR)
 
