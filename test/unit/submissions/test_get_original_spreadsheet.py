@@ -1,25 +1,12 @@
 import unittest
-from unittest import TestCase
-from unittest.mock import patch, Mock
-
-from hca_ingest.api.ingestapi import IngestApi
+from unittest.mock import patch
 
 from broker.service.spreadsheet_storage import SubmissionSpreadsheetDoesntExist
-from broker_app import create_app
+
+from test.unit.test_broker_app import BrokerAppTest
 
 
-class GetOriginalSpreadsheetTestCase(TestCase):
-
-    @patch('broker_app.IngestApi')
-    @patch('broker_app.SchemaService')
-    @patch('broker_app.SpreadsheetGenerator')
-    def setUp(self, xls_generator, schema_service, mock_ingest_api_constructor):
-        self.mock_ingest = Mock(spec=IngestApi)
-        mock_ingest_api_constructor.return_value = self.mock_ingest
-        self._app = create_app()
-        self._app.config["TESTING"] = True
-        self._app.testing = True
-
+class GetOriginalSpreadsheetTestCase(BrokerAppTest):
     @patch('broker.service.spreadsheet_storage.SpreadsheetStorageService.retrieve_submission_spreadsheet')
     def test_original_spreadsheet_route(self, mock_export):
         # given

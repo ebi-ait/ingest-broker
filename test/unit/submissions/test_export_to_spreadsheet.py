@@ -1,27 +1,15 @@
 import json
 import unittest
 from http import HTTPStatus
-from unittest import TestCase
 from unittest.mock import patch, MagicMock, Mock
-
-from hca_ingest.api.ingestapi import IngestApi
-
 from broker.submissions import ExportToSpreadsheetService
-from broker_app import create_app
+from test.unit.test_broker_app import BrokerAppTest
 
 
-class ExportToSpreadsheetTestCase(TestCase):
-    @patch('broker_app.IngestApi')
-    @patch('broker_app.SchemaService')
-    @patch('broker_app.SpreadsheetGenerator')
-    def setUp(self, xls_generator, schema_service, mock_ingest_api_constructor):
-        self.mock_ingest = Mock(Spec=IngestApi)
-        mock_ingest_api_constructor.return_value = self.mock_ingest
-        self._app = create_app()
-        self._app.config["TESTING"] = True
-        self._app.testing = True
+class ExportToSpreadsheetTestCase(BrokerAppTest):
+    def setUp(self):
+        super().setUp()
         self._app.SPREADSHEET_STORAGE_DIR = 'mock_storage_dir'
-
         self.mock_submission = {
             'lastSpreadsheetGenerationJob': {
                 'finishedDate': '2022-01-27T12:00:58.417Z',

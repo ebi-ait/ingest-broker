@@ -1,30 +1,19 @@
 import json
 import unittest
 from io import BytesIO
-from unittest import TestCase
-from unittest.mock import ANY, patch, MagicMock, Mock
-
-from hca_ingest.api.ingestapi import IngestApi
+from unittest.mock import ANY, patch, MagicMock
 
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadError
 from broker.upload.routes import UploadResponse
-from broker_app import create_app
+
+from test.unit.test_broker_app import BrokerAppTest
 
 
-class UploadSpreadsheetTestCase(TestCase):
-
-    @patch('broker_app.IngestApi')
-    @patch('broker_app.SchemaService')
-    @patch('broker_app.SpreadsheetGenerator')
-    def setUp(self, xls_generator, schema_service, mock_ingest_api_constructor):
-        self.mock_ingest = Mock(Spec=IngestApi)
-        mock_ingest_api_constructor.return_value = self.mock_ingest
-
+class UploadSpreadsheetTestCase(BrokerAppTest):
+    def setUp(self):
+        super().setUp()
         self.project_uuid = "test-project-uuid"
         self.submission_uuid = "test-submission-uuid"
-        self._app = create_app()
-        self._app.config["TESTING"] = True
-        self._app.testing = True
         request_ctx = self._app.test_request_context()
         request_ctx.push()
 
