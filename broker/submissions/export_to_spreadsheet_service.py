@@ -70,10 +70,6 @@ class ExportToSpreadsheetService:
         self.copy_to_s3_staging_area(spreadsheet_details, staging_area)
         self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
 
-    def save_spreadsheet(self, spreadsheet_details: SpreadsheetDetails, workbook):
-        os.makedirs(spreadsheet_details.directory, exist_ok=True)
-        workbook.save(spreadsheet_details.filepath)
-
     def update_spreadsheet_finish(self, create_date, submission_url):
         finished_date = datetime.now(timezone.utc)
         self.__patch_file_generation(submission_url, create_date, finished_date)
@@ -140,6 +136,11 @@ class ExportToSpreadsheetService:
         filepath = f'{directory}/{filename}'
 
         return SpreadsheetDetails(filename, filepath, directory)
+
+    @staticmethod
+    def save_spreadsheet(spreadsheet_details: SpreadsheetDetails, workbook):
+        os.makedirs(spreadsheet_details.directory, exist_ok=True)
+        workbook.save(spreadsheet_details.filepath)
 
     @staticmethod
     def build_supplementary_file_payload(schema_url, filename):
