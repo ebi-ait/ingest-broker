@@ -1,13 +1,14 @@
-import datetime
 import logging
 import os
 import threading
+import uuid
 from collections import namedtuple
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
-import boto3 as boto3
+import boto3
 from botocore.exceptions import ClientError
+from hca_ingest.api.ingestapi import IngestApi
 from hca_ingest.downloader.data_collector import DataCollector
 from hca_ingest.downloader.downloader import XlsDownloader
 from hca_ingest.utils.date import date_to_json_string
@@ -18,9 +19,9 @@ SpreadsheetDetails = namedtuple("SpreadsheetDetails", "filename filepath directo
 
 class ExportToSpreadsheetService:
 
-    def __init__(self, app=None):
-        self.data_collector = None
-        self.ingest_api = None
+    def __init__(self, ingest_api: IngestApi, app=None):
+        self.ingest_api:IngestApi = ingest_api
+        self.data_collector = DataCollector(self.ingest_api)
         self.app = None
         self.config = None
 
@@ -37,19 +38,23 @@ class ExportToSpreadsheetService:
         :return:
         """
         self.app = app
+        app_config = self.app.config
+        self.configure(app_config)
+
+    def configure(self, config):
         self.config = {
-            "AWS_ACCESS_KEY_ID": self.app.config['AWS_ACCESS_KEY_ID'],
-            "AWS_ACCESS_KEY_SECRET": self.app.config['AWS_ACCESS_KEY_SECRET']
+            "AWS_ACCESS_KEY_ID": config['AWS_ACCESS_KEY_ID'],
+            "AWS_ACCESS_KEY_SECRET": config['AWS_ACCESS_KEY_SECRET']
         }
-        self.ingest_api = app.ingest_api
-        self.data_collector = DataCollector(self.ingest_api)
 
     def async_export_and_save(self, submission_uuid: str, storage_dir: str):
-        thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir))
+        job_id = str(uuid.uuid4())
+        thread = threading.Thread(target=self.export_and_save, args=(submission_uuid, storage_dir, job_id))
         thread.start()
+        return job_id
 
-    def export_and_save(self, submission_uuid: str, storage_dir: str):
-        self.logger.info(f'Exporting submission {submission_uuid}')
+    def export_and_save(self, submission_uuid: str, storage_dir: str, job_id: str):
+        self.logger.info(f'Exporting submission {submission_uuid}, job id = {job_id}')
         try:
             submission = self.ingest_api.get_submission_by_uuid(submission_uuid)
             submission_url = submission['_links']['self']['href']
@@ -58,18 +63,18 @@ class ExportToSpreadsheetService:
             self.logger.error(e)
             raise Exception(f'An error occurred in retrieving the submission with uuid {submission_uuid}: {str(e)}') from e
 
-        create_date = self.update_spreadsheet_start(submission_url)
+        create_date = self.update_spreadsheet_start(submission_url, job_id)
         spreadsheet_details = self.get_spreadsheet_details(create_date, storage_dir, submission_uuid)
         workbook = self.export(submission_uuid)
         self.save_spreadsheet(spreadsheet_details, workbook)
         self.link_spreadsheet(submission_url, submission, spreadsheet_details.filename)
-        self.update_spreadsheet_finish(create_date, submission_url)
+        self.update_spreadsheet_finish(create_date, submission_url, job_id)
         self.copy_to_s3_staging_area(spreadsheet_details, staging_area)
         self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
 
-    def update_spreadsheet_start(self, submission_url):
+    def update_spreadsheet_start(self, submission_url, job_id):
         create_date = datetime.now(timezone.utc)
-        self.__patch_file_generation(submission_url, create_date)
+        self.__patch_file_generation(submission_url, create_date, job_id)
         return create_date
 
     def export(self, submission_uuid: str):
@@ -90,14 +95,14 @@ class ExportToSpreadsheetService:
             entity_type='projects'
         )
         self.ingest_api.link_entity(
-            from_entity=projects[0],
+            from_entity=next(projects),
             to_entity=file_entity,
             relationship='supplementaryFiles'
         )
 
-    def update_spreadsheet_finish(self, create_date, submission_url):
+    def update_spreadsheet_finish(self, create_date:datetime, submission_url:str, job_id:str):
         finished_date = datetime.now(timezone.utc)
-        self.__patch_file_generation(submission_url, create_date, finished_date)
+        self.__patch_file_generation(submission_url, create_date, job_id, finished_date)
 
     def copy_to_s3_staging_area(self, spreadsheet_details: SpreadsheetDetails, staging_area):
         staging_area_url = urlparse(staging_area)
@@ -117,22 +122,23 @@ class ExportToSpreadsheetService:
     def init_s3_client(self):
         return boto3.client(
             's3',
-            aws_access_key_id=self.config.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=self.config.AWS_ACCESS_KEY_SECRET
+            aws_access_key_id=self.config['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=self.config['AWS_ACCESS_KEY_SECRET']
         )
 
-    def __patch_file_generation(self, submission_url, create_date, finished_date=None):
+    def __patch_file_generation(self, submission_url, create_date: datetime, job_id: str, finished_date=None):
         patch = {
             'lastSpreadsheetGenerationJob': {
                 'finishedDate': date_to_json_string(finished_date) if finished_date else None,
-                'createdDate': date_to_json_string(create_date)
+                'createdDate': date_to_json_string(create_date),
+                'jobId': job_id
             }
         }
         self.ingest_api.patch(submission_url, json=patch)
 
     @staticmethod
     def get_spreadsheet_details(create_date, storage_dir, submission_uuid) -> SpreadsheetDetails:
-        directory = f'{storage_dir}/{submission_uuid}/downloads/'
+        directory = f'{storage_dir}/{submission_uuid}/downloads'
         timestamp = create_date.strftime("%Y%m%d-%H%M%S")
         filename = f'{submission_uuid}_{timestamp}.xlsx'
         filepath = f'{directory}/{filename}'

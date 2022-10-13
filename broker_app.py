@@ -130,7 +130,7 @@ Nothing else for you to do - check back later."
     app.config['AWS_ACCESS_KEY_SECRET'] = \
         os.environ['AWS_ACCESS_KEY_SECRET']
 
-    app.ingest_api = IngestApi()
+    app.ingest_api: IngestApi = IngestApi()
     app.IngestApi = IngestApi
     spreadsheet_generator = SpreadsheetGenerator(app.ingest_api)
     app.spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, app.SPREADSHEET_STORAGE_DIR)
