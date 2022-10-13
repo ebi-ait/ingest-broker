@@ -38,8 +38,8 @@ class ExportToSpreadsheetService:
         """
         self.app = app
         self.config = {
-            "AWS_ACCESS_KEY_ID": self.app.config.AWS_ACCESS_KEY_ID,
-            "AWS_ACCESS_KEY_SECRET": self.app.config.AWS_ACCESS_KEY_SECRET
+            "AWS_ACCESS_KEY_ID": self.app.config['AWS_ACCESS_KEY_ID'],
+            "AWS_ACCESS_KEY_SECRET": self.app.config['AWS_ACCESS_KEY_SECRET']
         }
         self.ingest_api = app.ingest_api
         self.data_collector = DataCollector(self.ingest_api)

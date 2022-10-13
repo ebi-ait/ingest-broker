@@ -125,6 +125,11 @@ Nothing else for you to do - check back later."
     CORS(app, expose_headers=["Content-Disposition"])
     app.config['CORS_HEADERS'] = 'Content-Type'
 
+    app.config['AWS_ACCESS_KEY_ID'] = \
+        os.environ['AWS_ACCESS_KEY_ID']
+    app.config['AWS_ACCESS_KEY_SECRET'] = \
+        os.environ['AWS_ACCESS_KEY_SECRET']
+
     app.ingest_api = IngestApi()
     app.IngestApi = IngestApi
     spreadsheet_generator = SpreadsheetGenerator(app.ingest_api)
