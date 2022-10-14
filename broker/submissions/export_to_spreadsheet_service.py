@@ -58,7 +58,7 @@ class ExportToSpreadsheetService:
         try:
             submission = self.ingest_api.get_submission_by_uuid(submission_uuid)
             submission_url = submission['_links']['self']['href']
-            staging_area = submission['stagingDetails']['stagingAreaLocation']
+            staging_area = submission['stagingDetails']['stagingAreaLocation']['value']
         except Exception as e:
             self.logger.error(e)
             raise Exception(f'An error occurred in retrieving the submission with uuid {submission_uuid}: {str(e)}') from e
@@ -88,14 +88,16 @@ class ExportToSpreadsheetService:
         schema_url = self.ingest_api.get_latest_schema_url('type', 'file', 'supplementary_file')
         spreadsheet_payload = self.build_supplementary_file_payload(schema_url, filename)
         submission_files_url = self.ingest_api.get_link_in_submission(submission_url, 'files')
-        file_entity = self.ingest_api.post(submission_files_url, json=spreadsheet_payload)
+        file_entity_response = self.ingest_api.post(submission_files_url, json=spreadsheet_payload)
+        file_entity = file_entity_response.json()
         projects = self.ingest_api.get_related_entities(
             entity=submission,
             relation='projects',
             entity_type='projects'
         )
+        project_entity = next(projects)
         self.ingest_api.link_entity(
-            from_entity=next(projects),
+            from_entity=project_entity,
             to_entity=file_entity,
             relationship='supplementaryFiles'
         )
@@ -111,9 +113,9 @@ class ExportToSpreadsheetService:
         s3_client = self.init_s3_client()
         response = None
         try:
-            response = s3_client.upload_file(filename=spreadsheet_details.filepath,
-                                             bucket=bucket,
-                                             key=object_name)
+            response = s3_client.upload_file(Filename=spreadsheet_details.filepath,
+                                             Bucket=bucket,
+                                             Key=object_name)
             self.logger.info(f'uploaded metadata spreadsheet {spreadsheet_details.filename} '
                              f'to upload area {staging_area}')
         except ClientError as e:

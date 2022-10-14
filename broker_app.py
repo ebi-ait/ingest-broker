@@ -15,7 +15,10 @@ from hca_ingest.api.ingestapi import IngestApi
 from broker.import_geo.routes import import_geo_bp
 from broker.schemas.routes import schemas_bp
 from broker.service.spreadsheet_generation.spreadsheet_generator import SpreadsheetGenerator
-from broker.service.spreadsheet_generation.spreadsheet_job_manager import SpreadsheetJobManager, SpreadsheetSpec, JobStatus
+from broker.service.spreadsheet_generation.spreadsheet_job_manager import \
+    SpreadsheetJobManager, \
+    SpreadsheetSpec, \
+    JobStatus
 from broker.service.summary_service import SummaryService
 from broker.submissions import submissions_bp
 from broker.upload import upload_bp
@@ -116,8 +119,9 @@ def add_routes(app):
 def create_app():
     app = Flask(__name__, static_folder='static')
     app.SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
-    app.SPREADSHEET_UPLOAD_MESSAGE = "We’ve got your spreadsheet, and we’re currently importing and validating the data. \
-Nothing else for you to do - check back later."
+    app.SPREADSHEET_UPLOAD_MESSAGE = "We’ve got your spreadsheet, and we’re currently " \
+                                     "importing and validating the data. " \
+                                     "Nothing else for you to do - check back later."
 
     app.SPREADSHEET_UPLOAD_MESSAGE_ERROR = "We experienced a problem while uploading your spreadsheet"
     app.secret_key = 'cells'

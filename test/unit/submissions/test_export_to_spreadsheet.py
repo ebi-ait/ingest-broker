@@ -1,7 +1,7 @@
 import json
 import unittest
 from http import HTTPStatus
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, Mock
 
 from openpyxl.workbook import Workbook
 
@@ -10,6 +10,9 @@ from test.unit.test_broker_app import BrokerAppTest
 
 
 class RouteTestCase(BrokerAppTest):
+    """
+    tests the submissions route
+    """
     def setUp(self):
         super().setUp()
         self._app.SPREADSHEET_STORAGE_DIR = 'mock_storage_dir'
@@ -176,7 +179,7 @@ class ServiceTestCase(unittest.TestCase):
                 'self': {'href': 'http://test.submission/'},
                 'projects': {'href': 'http://ingest/submissionEnvelopes/test-submission-uuid/projects'}
             },
-            'stagingDetails': {'stagingAreaLocation': 's3://upload-bucket/project-uuid'}
+            'stagingDetails': {'stagingAreaLocation': {'value': 's3://upload-bucket/project-uuid'}}
         }
 
     def test_spreadsheet_generation(self):
@@ -198,6 +201,7 @@ class ServiceTestCase(unittest.TestCase):
         # todo: check call parameters
 
         # check the project is linked properly
+        call_args_list = self.mock_ingest.link_entity.call_args_list
 
     def setup_service(self):
         service = ExportToSpreadsheetService(self.mock_ingest)
