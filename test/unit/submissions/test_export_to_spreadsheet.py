@@ -82,8 +82,7 @@ class RouteTestCase(BrokerAppTest):
         self.assertEqual(response.status_code, HTTPStatus.ACCEPTED)
         mock_send_file.assert_not_called()
 
-    @patch.object(ExportToSpreadsheetService, 'async_export_and_save',
-                  return_value='test-job-id')
+    @patch.object(ExportToSpreadsheetService, 'async_export_and_save', return_value='test-job-id')
     @patch('broker.submissions.routes.IngestApi')
     def test_generate_spreadsheet__accepted__finished(self,
                                                       mock_async_export_and_save,
@@ -120,9 +119,11 @@ class RouteTestCase(BrokerAppTest):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
 
-    @patch('broker.submissions.ExportToSpreadsheetService.async_export_and_save',
-           ExportToSpreadsheetService.export_and_save)
-    def test_generate_spreadsheet__accepted__not_created(self):
+    @patch.object(ExportToSpreadsheetService,'async_export_and_save', return_value='test-job-id')
+    @patch('broker.submissions.routes.IngestApi')
+    def test_generate_spreadsheet__accepted__not_created(self,
+                                                         mock_async_export_and_save,
+                                                         mock_ingest_api_authenticated):
         # given
         self.mock_submission = {
             'lastSpreadsheetGenerationJob': None
@@ -131,16 +132,19 @@ class RouteTestCase(BrokerAppTest):
 
         with self._app.test_client() as app:
             # when
-            response = app.post(f'/submissions/{submission_uuid}/spreadsheet')
+            response = app.post(f'/submissions/{submission_uuid}/spreadsheet',
+                                headers={'Authorization': 'test'})
 
         # then
         self.mock_ingest.get_submission_by_uuid.assert_called_once_with(submission_uuid)
-        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTPStatus.ACCEPTED)
         # ToDo: Build correct mocking of calls-to and responses-from ingest
 
-    @patch('broker.submissions.ExportToSpreadsheetService.async_export_and_save',
-           ExportToSpreadsheetService.export_and_save)
-    def test_generate_spreadsheet__accepted__already_created(self):
+    @patch.object(ExportToSpreadsheetService,'async_export_and_save', return_value='test-job-id')
+    @patch('broker.submissions.routes.IngestApi')
+    def test_generate_spreadsheet__accepted__already_created(self,
+                                                             mock_async_export_and_save,
+                                                             mock_ingest_api_authenticated):
         # given
         self.mock_submission = {
             'lastSpreadsheetGenerationJob': {
@@ -153,7 +157,8 @@ class RouteTestCase(BrokerAppTest):
 
         with self._app.test_client() as app:
             # when
-            response = app.post(f'/submissions/{submission_uuid}/spreadsheet')
+            response = app.post(f'/submissions/{submission_uuid}/spreadsheet',
+                                headers={'Authorization': 'test'})
 
         # then
         self.mock_ingest.get_submission_by_uuid.assert_called_once_with(submission_uuid)
