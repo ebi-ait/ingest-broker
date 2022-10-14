@@ -20,7 +20,7 @@ SpreadsheetDetails = namedtuple("SpreadsheetDetails", "filename filepath directo
 class ExportToSpreadsheetService:
 
     def __init__(self, ingest_api: IngestApi, app=None):
-        self.ingest_api:IngestApi = ingest_api
+        self.ingest_api = ingest_api
         self.data_collector = DataCollector(self.ingest_api)
         self.app = None
         self.config = None

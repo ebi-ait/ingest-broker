@@ -119,7 +119,7 @@ class RouteTestCase(BrokerAppTest):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
 
-    @patch.object(ExportToSpreadsheetService,'async_export_and_save', return_value='test-job-id')
+    @patch.object(ExportToSpreadsheetService, 'async_export_and_save', return_value='test-job-id')
     @patch('broker.submissions.routes.IngestApi')
     def test_generate_spreadsheet__accepted__not_created(self,
                                                          mock_async_export_and_save,
@@ -140,7 +140,7 @@ class RouteTestCase(BrokerAppTest):
         self.assertEqual(response.status_code, HTTPStatus.ACCEPTED)
         # ToDo: Build correct mocking of calls-to and responses-from ingest
 
-    @patch.object(ExportToSpreadsheetService,'async_export_and_save', return_value='test-job-id')
+    @patch.object(ExportToSpreadsheetService, 'async_export_and_save', return_value='test-job-id')
     @patch('broker.submissions.routes.IngestApi')
     def test_generate_spreadsheet__accepted__already_created(self,
                                                              mock_async_export_and_save,
