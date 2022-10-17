@@ -131,6 +131,7 @@ def create_app():
 
     app.config['AWS_ACCESS_KEY_ID'] = os.getenv('AWS_ACCESS_KEY_ID')
     app.config['AWS_ACCESS_KEY_SECRET'] = os.getenv('AWS_ACCESS_KEY_SECRET')
+    app.config['AWS_ROLE'] = os.getenv('AWS_ROLE')
 
     app.ingest_api = IngestApi()
     app.IngestApi = IngestApi
