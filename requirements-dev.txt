@@ -4,6 +4,8 @@
 #
 #    pip-compile requirements-dev.in
 #
+assertpy==1.1
+    # via -r requirements-dev.in
 astroid==2.12.10
     # via pylint
 attrs==22.1.0
