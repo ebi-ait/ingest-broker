@@ -108,7 +108,7 @@ class ExportToSpreadsheetService:
     def copy_to_s3_staging_area(self, spreadsheet_details: SpreadsheetDetails, staging_area):
         staging_area_url = urlparse(staging_area)
         bucket = staging_area_url.netloc
-        object_name = f'{staging_area_url.path.lstrip("/")}/{spreadsheet_details.filename}'
+        object_name = f'{staging_area_url.path.strip("/")}/{spreadsheet_details.filename}'
         s3_client = self.init_s3_client()
         response = None
         try:
