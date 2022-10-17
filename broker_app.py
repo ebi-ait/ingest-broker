@@ -32,7 +32,7 @@ with open(f'{script_dir}/logging-config.json', 'rt') as config_file:
 def add_routes(app):
     @app.route('/', methods=['GET'])
     def index():
-        new_ui_url = os.environ.get('INGEST_UI')
+        new_ui_url = os.getenv('INGEST_UI')
         if new_ui_url:
             return redirect(new_ui_url, code=302)
         return app.response_class(
@@ -118,7 +118,7 @@ def add_routes(app):
 
 def create_app():
     app = Flask(__name__, static_folder='static')
-    app.SPREADSHEET_STORAGE_DIR = os.environ.get('SPREADSHEET_STORAGE_DIR')
+    app.SPREADSHEET_STORAGE_DIR = os.getenv('SPREADSHEET_STORAGE_DIR')
     app.SPREADSHEET_UPLOAD_MESSAGE = "We’ve got your spreadsheet, and we’re currently " \
                                      "importing and validating the data. " \
                                      "Nothing else for you to do - check back later."

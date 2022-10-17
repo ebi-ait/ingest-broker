@@ -1,3 +1,4 @@
+import os
 from unittest import TestCase
 from unittest.mock import patch, Mock
 
@@ -29,10 +30,7 @@ class BrokerAppTest(TestCase):
         self._app.config["TESTING"] = True
         self._app.testing = True
 
-    @patch('broker_app.os.environ')
-    def test_index(self, mock_env):
-        # given
-        mock_env.get.return_value = None
+    def test_index(self):
         # when:
         with self._app.test_client() as app:
             response = app.get('/')
@@ -44,13 +42,12 @@ class BrokerAppTest(TestCase):
         self.xls_constructor.assert_called_once_with(self.mock_ingest)
         self.job_constructor.assert_called_once_with(self.mock_spreadsheet, None)
 
-    @patch('broker_app.os.environ')
-    def test_index_redirect(self, mock_env):
-        # given
-        mock_env.get.return_value = 'url'
+    def test_index_redirect(self):
+        mock_url = 'url'
+        os.environ['INGEST_UI'] = mock_url
         # when:
         with self._app.test_client() as app:
             response = app.get('/')
         # then
         self.assertEqual(response.status_code, 302)
-
+        self.assertIn(mock_url, response.location)
