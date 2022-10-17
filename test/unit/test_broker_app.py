@@ -31,11 +31,12 @@ class BrokerAppTest(TestCase):
         self._app.testing = True
 
     def test_index(self):
+        # Given
+        os.environ.clear()
         # when:
         with self._app.test_client() as app:
             response = app.get('/')
-
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
     def test_create_app(self):
         self.ingest_constructor.assert_called_once()
@@ -49,5 +50,5 @@ class BrokerAppTest(TestCase):
         with self._app.test_client() as app:
             response = app.get('/')
         # then
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(302, response.status_code)
         self.assertIn(mock_url, response.location)
