@@ -21,7 +21,7 @@ class GetOriginalSpreadsheetTestCase(BrokerAppTest):
             mock_export.assert_called_with(submission_id)
             content_disp = response.headers.get('Content-Disposition')
             self.assertRegex(content_disp, f'filename={submission_id}\\.xlsx')
-            self.assertEqual(200, response.status_code)\
+            self.assertEqual(200, response.status_code)
 
 
     @patch('broker.service.spreadsheet_storage.SpreadsheetStorageService.retrieve_submission_spreadsheet')

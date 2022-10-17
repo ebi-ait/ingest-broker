@@ -55,22 +55,22 @@ class ExportToSpreadsheetService:
 
     def export_and_save(self, submission_uuid: str, storage_dir: str, job_id: str):
         self.logger.info(f'Exporting submission {submission_uuid}, job id = {job_id}')
+        submission = self.ingest_api.get_submission_by_uuid(submission_uuid)
         try:
-            submission = self.ingest_api.get_submission_by_uuid(submission_uuid)
             submission_url = submission['_links']['self']['href']
             staging_area = submission['stagingDetails']['stagingAreaLocation']['value']
+            create_date = self.update_spreadsheet_start(submission_url, job_id)
+            spreadsheet_details = self.get_spreadsheet_details(create_date, storage_dir, submission_uuid)
+            workbook = self.export(submission_uuid)
+            self.save_spreadsheet(spreadsheet_details, workbook)
+            self.link_spreadsheet(submission_url, submission, spreadsheet_details.filename)
+            self.update_spreadsheet_finish(create_date, submission_url, job_id)
+            self.copy_to_s3_staging_area(spreadsheet_details, staging_area)
+            self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
         except Exception as e:
-            self.logger.error(e)
-            raise Exception(f'An error occurred in retrieving the submission with uuid {submission_uuid}: {str(e)}') from e
-
-        create_date = self.update_spreadsheet_start(submission_url, job_id)
-        spreadsheet_details = self.get_spreadsheet_details(create_date, storage_dir, submission_uuid)
-        workbook = self.export(submission_uuid)
-        self.save_spreadsheet(spreadsheet_details, workbook)
-        self.link_spreadsheet(submission_url, submission, spreadsheet_details.filename)
-        self.update_spreadsheet_finish(create_date, submission_url, job_id)
-        self.copy_to_s3_staging_area(spreadsheet_details, staging_area)
-        self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
+            err = f'Problem when generating spreadsheet for submission with uuid {submission_uuid}: {str(e)}'
+            self.logger.error(err, e)
+            raise Exception(err) from e
 
     def update_spreadsheet_start(self, submission_url, job_id):
         create_date = datetime.now(timezone.utc)
@@ -87,9 +87,8 @@ class ExportToSpreadsheetService:
     def link_spreadsheet(self, submission_url, submission, filename):
         schema_url = self.ingest_api.get_latest_schema_url('type', 'file', 'supplementary_file')
         spreadsheet_payload = self.build_supplementary_file_payload(schema_url, filename)
-        submission_files_url = self.ingest_api.get_link_in_submission(submission_url, 'files')
-        file_entity_response = self.ingest_api.post(submission_files_url, json=spreadsheet_payload)
-        file_entity = file_entity_response.json()
+        file_entity_response = self.ingest_api.create_file(submission_url, filename=filename, content=spreadsheet_payload)
+        file_entity = file_entity_response
         projects = self.ingest_api.get_related_entities(
             entity=submission,
             relation='projects',
@@ -128,7 +127,7 @@ class ExportToSpreadsheetService:
             aws_secret_access_key=self.config['AWS_ACCESS_KEY_SECRET']
         )
 
-    def __patch_file_generation(self, submission_url, create_date: datetime, job_id: str, finished_date=None):
+    def __patch_file_generation(self, submission_url, create_date: datetime, job_id: str, finished_date=None, err=None):
         patch = {
             'lastSpreadsheetGenerationJob': {
                 'finishedDate': date_to_json_string(finished_date) if finished_date else None,
@@ -161,10 +160,12 @@ class ExportToSpreadsheetService:
                 "file_name": filename,
                 "format": "xlsx",
                 "file_source": "DCP/2 Ingest",
-                "content_description": {
-                    "text": "metadata spreadsheet",
-                    "ontology": "data:2193",
-                    "ontology_label": "Database entry metadata"
-                }
+                "content_description": [
+                    {
+                        "text": "metadata spreadsheet",
+                        "ontology": "data:2193",
+                        "ontology_label": "Database entry metadata"
+                    }
+                ]
             }
         }

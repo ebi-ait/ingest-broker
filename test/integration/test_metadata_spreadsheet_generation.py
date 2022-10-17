@@ -1,3 +1,4 @@
+import os
 from unittest import TestCase
 
 import polling as polling
@@ -12,13 +13,14 @@ def is_spreadsheet_ready(submission):
 
 
 class TestMetadataSpreadsheetGenerator(TestCase):
-    def test1(self):
+    def test_spreadsheet_generation(self):
         ingest_url = 'https://api.ingest.dev.archive.data.humancellatlas.org'
-        broker_url = 'https://ingest.dev.archive.data.humancellatlas.org'
+        broker_url = 'http://localhost:5001'
+
         submission_uuid = 'c81f7d54-a27f-4212-a6df-88dde947f7cc'
         # generate spreadsheet
-        token = 'test'
-        # generate_spreadsheet_response = requests.post(f'{broker_url}/submissions/{submission_uuid}/spreadsheet', headers={'Authorization': token})
+        token = os.environ['INGEST_TOKEN']
+        generate_spreadsheet_response = requests.post(f'{broker_url}/submissions/{submission_uuid}/spreadsheet', headers={'Authorization': token})
         submission = requests.get(f'{ingest_url}/submissionEnvelopes/search/findByUuidUuid', params={'uuid':submission_uuid}).json()
         # wait
         polling.poll(
