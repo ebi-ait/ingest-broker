@@ -28,12 +28,13 @@ class ServiceTestCase(TestCase):
         submission = self.mock_submission()
         submission_url = submission['_links']['self']['href']
         submission_uuid = submission['uuid']['uuid']
-        details = ExportToSpreadsheetService.get_spreadsheet_details(start_date, STORAGE_DIR, submission_uuid)
+        details = ExportToSpreadsheetService.get_spreadsheet_details(STORAGE_DIR, submission_uuid)
         file = ExportToSpreadsheetService.build_supplementary_file_payload(SCHEMA_URL, details.filename)
         s3_key = f'{submission_uuid}/{details.filename}'
         service = self.partial_mock_service(self.ingest, self.s3, start_date)
         self.ingest.get_submission_by_uuid = Mock(return_value=submission)
         self.ingest.get_related_entities = Mock(return_value=(_ for _ in [project]))
+        self.ingest.get_file_by_submission_url_and_filename = Mock(return_value=[])
         self.ingest.get_latest_schema_url = Mock(return_value=SCHEMA_URL)
         self.ingest.create_file = Mock(return_value=file)
         self.ingest.link_entity = Mock()
@@ -65,6 +66,7 @@ class ServiceTestCase(TestCase):
         service.update_spreadsheet_start = Mock(return_value=start_date)
         service.update_spreadsheet_finish = Mock()
         service.init_s3_client = Mock(return_value=s3)
+        service.wait_for_file_to_be_marked_valid = Mock()
         return service
 
     @staticmethod

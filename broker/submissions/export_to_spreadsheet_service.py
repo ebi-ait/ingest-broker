@@ -7,11 +7,13 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import boto3
+import requests
 from botocore.exceptions import ClientError
 from hca_ingest.api.ingestapi import IngestApi
 from hca_ingest.downloader.data_collector import DataCollector
 from hca_ingest.downloader.downloader import XlsDownloader
 from hca_ingest.utils.date import date_to_json_string
+from polling import poll
 
 SpreadsheetDetails = namedtuple("SpreadsheetDetails", "filename filepath directory")
 
@@ -60,12 +62,13 @@ class ExportToSpreadsheetService:
             submission_url = submission['_links']['self']['href']
             staging_area = submission['stagingDetails']['stagingAreaLocation']['value']
             create_date = self.update_spreadsheet_start(submission_url, job_id)
-            spreadsheet_details = self.get_spreadsheet_details(create_date, storage_dir, submission_uuid)
+            spreadsheet_details = self.get_spreadsheet_details(storage_dir, submission_uuid)
+            file = self.update_submission_supplementary_file(submission_url, submission, spreadsheet_details.filename)
             workbook = self.export(submission_uuid)
             self.save_spreadsheet(spreadsheet_details, workbook)
-            self.link_spreadsheet(submission_url, submission, spreadsheet_details.filename)
-            self.update_spreadsheet_finish(create_date, submission_url, job_id)
             self.copy_to_s3_staging_area(spreadsheet_details, staging_area)
+            self.wait_for_file_to_be_marked_valid(file)
+            self.update_spreadsheet_finish(create_date, submission_url, job_id)
             self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
         except Exception as e:
             err = f'Problem when generating spreadsheet for submission with uuid {submission_uuid}: {str(e)}'
@@ -73,21 +76,39 @@ class ExportToSpreadsheetService:
             raise Exception(err) from e
 
     def update_spreadsheet_start(self, submission_url, job_id):
+        self.logger.info(f'Starting Spreadsheet Generation Job: {submission_url}, JobId: {job_id}')
         create_date = datetime.now(timezone.utc)
         self.__patch_file_generation(submission_url, create_date, job_id)
         return create_date
 
     def export(self, submission_uuid: str):
+        self.logger.info(f'Generating Spreadsheet: {submission_uuid}')
         entity_dict = self.data_collector.collect_data_by_submission_uuid(submission_uuid)
         entity_list = list(entity_dict.values())
         flattened_json = self.downloader.convert_json(entity_list)
         workbook = self.downloader.create_workbook(flattened_json)
         return workbook
 
-    def link_spreadsheet(self, submission_url, submission, filename):
+    def update_submission_supplementary_file(self, submission_url, submission, filename):
+        files = self.ingest_api.get_file_by_submission_url_and_filename(submission_url, filename)
+        if files:
+            self.delete_submission_supplementary_file(files[0])
+        return self.add_submission_supplementary_file(submission_url, submission, filename)
+
+    def delete_submission_supplementary_file(self, file):
+        file_url = file.get('_links', {}).get('self', {}).get('href')
+        self.logger.info(f'Deleting Old Supplementary File: {file_url}')
+        self.ingest_api.delete(file_url)
+
+    def add_submission_supplementary_file(self, submission_url, submission, filename):
+        self.logger.info(f'Adding New Supplementary File: {submission_url}')
         schema_url = self.ingest_api.get_latest_schema_url('type', 'file', 'supplementary_file')
         spreadsheet_payload = self.build_supplementary_file_payload(schema_url, filename)
-        file_entity = self.ingest_api.create_file(submission_url, filename=filename, content=spreadsheet_payload)
+        file_entity = self.ingest_api.create_file(
+            submission_url,
+            filename=filename,
+            content=spreadsheet_payload
+        )
         projects = self.ingest_api.get_related_entities(
             entity=submission,
             relation='projects',
@@ -99,12 +120,10 @@ class ExportToSpreadsheetService:
             to_entity=file_entity,
             relationship='supplementaryFiles'
         )
-
-    def update_spreadsheet_finish(self, create_date: datetime, submission_url: str, job_id: str):
-        finished_date = datetime.now(timezone.utc)
-        self.__patch_file_generation(submission_url, create_date, job_id, finished_date)
+        return file_entity
 
     def copy_to_s3_staging_area(self, spreadsheet_details: SpreadsheetDetails, staging_area):
+        self.logger.info(f'Uploading Supplementary File to s3: {staging_area}')
         staging_area_url = urlparse(staging_area)
         bucket = staging_area_url.netloc
         object_name = f'{staging_area_url.path.strip("/")}/{spreadsheet_details.filename}'
@@ -118,6 +137,20 @@ class ExportToSpreadsheetService:
                              f'to upload area {staging_area}')
         except ClientError as e:
             self.logger.error(f's3 response: {response}', e)
+
+    def wait_for_file_to_be_marked_valid(self, file: dict):
+        file_url = file.get('_links', {}).get('self', {}).get('href')
+        self.logger.info(f'Waiting for file to be marked valid: {file_url}')
+        poll(
+            lambda: requests.get(file_url).json(),
+            check_success=self.is_file_valid,
+            step=1,
+            timeout=600
+        )
+
+    def update_spreadsheet_finish(self, create_date: datetime, submission_url: str, job_id: str):
+        finished_date = datetime.now(timezone.utc)
+        self.__patch_file_generation(submission_url, create_date, job_id, finished_date)
 
     def init_s3_client(self) -> boto3.client:
         # The calls to AWS STS AssumeRole must be signed with the access key ID
@@ -161,12 +194,10 @@ class ExportToSpreadsheetService:
         self.ingest_api.patch(submission_url, json=patch)
 
     @staticmethod
-    def get_spreadsheet_details(create_date, storage_dir, submission_uuid) -> SpreadsheetDetails:
+    def get_spreadsheet_details(storage_dir, submission_uuid) -> SpreadsheetDetails:
         directory = f'{storage_dir}/{submission_uuid}/downloads'
-        timestamp = create_date.strftime("%Y%m%d-%H%M%S")
-        filename = f'{submission_uuid}_{timestamp}.xlsx'
+        filename = f'{submission_uuid}.xlsx'
         filepath = f'{directory}/{filename}'
-
         return SpreadsheetDetails(filename, filepath, directory)
 
     @staticmethod
@@ -202,3 +233,8 @@ class ExportToSpreadsheetService:
                 ]
             }
         }
+
+    @staticmethod
+    def is_file_valid(file: dict) -> bool:
+        state = file.get('validationState', 'Invalid')
+        return state == 'Valid'

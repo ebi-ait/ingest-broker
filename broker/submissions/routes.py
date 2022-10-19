@@ -53,12 +53,8 @@ def download_spreadsheet(submission_uuid):
     # Don't switch to the pythonic 'key' in dictionary pattern here since
     # the service starts jobs with finishedDate set to None
     if spreadsheet_job.get('finishedDate'):
-        create_date = parse_date_string(spreadsheet_job.get('createdDate'))
         spreadsheet_details = ExportToSpreadsheetService.get_spreadsheet_details(
-            create_date,
-            app.SPREADSHEET_STORAGE_DIR,
-            submission_uuid
-        )
+            app.SPREADSHEET_STORAGE_DIR, submission_uuid)
         return send_file(spreadsheet_details.filepath,
                          as_attachment=True,
                          cache_timeout=0,
