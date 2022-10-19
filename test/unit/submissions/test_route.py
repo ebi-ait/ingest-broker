@@ -77,10 +77,7 @@ class RouteTestCase(BrokerAppTest):
         mock_send_file.assert_not_called()
 
     @patch.object(ExportToSpreadsheetService, 'async_export_and_save', return_value='test-job-id')
-    @patch('broker.submissions.routes.IngestApi')
-    def test_generate_spreadsheet__accepted__finished(self,
-                                                      mock_async_export_and_save,
-                                                      mock_ingest_api_authenticated):
+    def test_generate_spreadsheet__accepted__finished(self, mock_async_export_and_save):
         """
         tests the happy path for the controller
         """
@@ -104,10 +101,7 @@ class RouteTestCase(BrokerAppTest):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     @patch.object(ExportToSpreadsheetService, 'async_export_and_save', return_value='test-job-id')
-    @patch('broker.submissions.routes.IngestApi')
-    def test_generate_spreadsheet__accepted__not_created(self,
-                                                         mock_async_export_and_save,
-                                                         mock_ingest_api_authenticated):
+    def test_generate_spreadsheet__accepted__not_created(self, mock_async_export_and_save):
         # given
         self.mock_submission.return_value = {
             'lastSpreadsheetGenerationJob': None
@@ -124,10 +118,7 @@ class RouteTestCase(BrokerAppTest):
         self.assertEqual(response.status_code, HTTPStatus.ACCEPTED)
 
     @patch.object(ExportToSpreadsheetService, 'async_export_and_save', return_value='test-job-id')
-    @patch('broker.submissions.routes.IngestApi')
-    def test_generate_spreadsheet__accepted__already_created(self,
-                                                             mock_async_export_and_save,
-                                                             mock_ingest_api_authenticated):
+    def test_generate_spreadsheet__accepted__already_created(self, mock_async_export_and_save):
         # given
         self.mock_submission.return_value = {
             'lastSpreadsheetGenerationJob': {

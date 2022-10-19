@@ -4,7 +4,6 @@ from http import HTTPStatus
 import jsonpickle
 from flask import Blueprint, send_file, request
 from flask import current_app as app
-from hca_ingest.api.ingestapi import IngestApi
 from hca_ingest.utils.date import parse_date_string
 
 from broker.common.util import response_json
@@ -30,7 +29,7 @@ def generate_spreadsheet(submission_uuid):
             return response_json(HTTPStatus.BAD_REQUEST, {'status': HTTPStatus.BAD_REQUEST,
                                                           'message': 'missing Authorization header'})
         # need a dedicated ingest client that can be authenticated
-        ingest_api = IngestApi()
+        ingest_api = app.IngestApi()
         ingest_api.set_token(token)
         spreadsheet_export_service = ExportToSpreadsheetService(app=app, ingest_api=ingest_api)
         job_id = spreadsheet_export_service.async_export_and_save(submission_uuid, app.SPREADSHEET_STORAGE_DIR)
