@@ -87,8 +87,7 @@ class ExportToSpreadsheetService:
     def link_spreadsheet(self, submission_url, submission, filename):
         schema_url = self.ingest_api.get_latest_schema_url('type', 'file', 'supplementary_file')
         spreadsheet_payload = self.build_supplementary_file_payload(schema_url, filename)
-        file_entity_response = self.ingest_api.create_file(submission_url, filename=filename, content=spreadsheet_payload)
-        file_entity = file_entity_response
+        file_entity = self.ingest_api.create_file(submission_url, filename=filename, content=spreadsheet_payload)
         projects = self.ingest_api.get_related_entities(
             entity=submission,
             relation='projects',
@@ -120,7 +119,7 @@ class ExportToSpreadsheetService:
         except ClientError as e:
             self.logger.error(f's3 response: {response}', e)
 
-    def init_s3_client(self):
+    def init_s3_client(self) -> boto3.client:
         # The calls to AWS STS AssumeRole must be signed with the access key ID
         # and secret access key of an existing IAM user or by using existing temporary
         # credentials such as those from another role. (You cannot call AssumeRole
@@ -158,13 +157,7 @@ class ExportToSpreadsheetService:
         )
 
     def __patch_file_generation(self, submission_url, create_date: datetime, job_id: str, finished_date=None):
-        patch = {
-            'lastSpreadsheetGenerationJob': {
-                'finishedDate': date_to_json_string(finished_date) if finished_date else None,
-                'createdDate': date_to_json_string(create_date),
-                'jobId': job_id
-            }
-        }
+        patch = self.build_generation_job(create_date, job_id, finished_date)
         self.ingest_api.patch(submission_url, json=patch)
 
     @staticmethod
@@ -180,6 +173,16 @@ class ExportToSpreadsheetService:
     def save_spreadsheet(spreadsheet_details: SpreadsheetDetails, workbook):
         os.makedirs(spreadsheet_details.directory, exist_ok=True)
         workbook.save(spreadsheet_details.filepath)
+
+    @staticmethod
+    def build_generation_job(create_date, job_id, finished_date):
+        return {
+            'lastSpreadsheetGenerationJob': {
+                'finishedDate': date_to_json_string(finished_date) if finished_date else None,
+                'createdDate': date_to_json_string(create_date),
+                'jobId': job_id
+            }
+        }
 
     @staticmethod
     def build_supplementary_file_payload(schema_url, filename):
