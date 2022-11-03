@@ -53,8 +53,7 @@ class ExportToSpreadsheetService:
         try:
             submission_url = submission['_links']['self']['href']
             create_date = self.update_spreadsheet_start(submission_url, job_id)
-            spreadsheet_details = self.get_spreadsheet_details(storage_dir, submission_uuid)
-            file = self.update_submission_supplementary_file(submission_url, submission, spreadsheet_details.filename)
+            spreadsheet_details = self.get_spreadsheet_details(storage_dir, submission_uuid, create_date)
             workbook = self.export(submission_uuid)
             self.save_spreadsheet(spreadsheet_details, workbook)
             self.update_spreadsheet_finish(create_date, submission_url, job_id)
@@ -87,9 +86,10 @@ class ExportToSpreadsheetService:
         self.ingest_api.patch(submission_url, json=patch)
 
     @staticmethod
-    def get_spreadsheet_details(storage_dir, submission_uuid) -> SpreadsheetDetails:
+    def get_spreadsheet_details(storage_dir: str, submission_uuid: str, create_date: datetime) -> SpreadsheetDetails:
+        timestamp = create_date.strftime("%Y%m%d-%H%M%S")
         directory = f'{storage_dir}/{submission_uuid}/downloads'
-        filename = f'{submission_uuid}.xlsx'
+        filename = f'{submission_uuid}_{timestamp}.xlsx'
         filepath = f'{directory}/{filename}'
         return SpreadsheetDetails(filename, filepath, directory)
 
