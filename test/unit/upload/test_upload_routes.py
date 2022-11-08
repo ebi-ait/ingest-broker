@@ -1,38 +1,27 @@
 import json
 import unittest
 from io import BytesIO
-from unittest import TestCase
 from unittest.mock import ANY, patch, MagicMock
 
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadError
 from broker.upload.routes import UploadResponse
-from broker_app import create_app
+
+from test.unit.test_broker_app import BrokerAppTest
 
 
-class UploadSpreadsheetTestCase(TestCase):
-
-    @patch('broker_app.IngestApi')
-    @patch('broker_app.SchemaService')
-    @patch('broker_app.SpreadsheetGenerator')
-    def setUp(self, xls_generator, schema_service, mock_ingest_api_constructor):
+class UploadSpreadsheetTestCase(BrokerAppTest):
+    def setUp(self):
+        super().setUp()
         self.project_uuid = "test-project-uuid"
         self.submission_uuid = "test-submission-uuid"
-        _app = create_app()
-        request_ctx = _app.test_request_context()
+        request_ctx = self._app.test_request_context()
         request_ctx.push()
-        with _app.test_client() as app:
-            self.app = app
-        _app.testing = True
 
-    @patch('ingest.api.ingestapi.IngestApi')
+    @patch('hca_ingest.importer.importer.XlsImporter')
     @patch('broker.service.spreadsheet_storage.SpreadsheetStorageService')
-    @patch('ingest.importer.importer.XlsImporter')
     @patch('broker.service.spreadsheet_upload_service.SpreadsheetUploadService.async_upload')
-    def test_upload_route(self,
-                          mock_upload: MagicMock,
-                          mock_importer,
-                          mock_storage_service,
-                          mock_ingest):
+    def test_upload_route(self, mock_upload: MagicMock, mock_storage_service, mock_importer):
+        # given
         mock_upload.return_value = {
             "_links": {"self": {"href": "xxx"}},
             "uuid": {"uuid": self.submission_uuid}
@@ -44,24 +33,23 @@ class UploadSpreadsheetTestCase(TestCase):
             'submissionUuid': self.submission_uuid}
 
         # when
-        response = self.app.post('/api_upload',
-                                 data={
-                                     'params': json.dumps(params),
-                                     'file': (BytesIO(b'my file contents'), 'file.txt')
-                                 })
+        with self._app.test_client() as app:
+            response = app.post(
+                '/api_upload',
+                data={
+                    'params': json.dumps(params),
+                    'file': (BytesIO(b'my file contents'), 'file.txt')
+                }
+            )
         # then
         self._verify_upload_service_call(mock_upload, params)
         self._verify_upload_output(response)
 
-    @patch('ingest.api.ingestapi.IngestApi')
+    @patch('hca_ingest.importer.importer.XlsImporter')
     @patch('broker.service.spreadsheet_storage.SpreadsheetStorageService')
-    @patch('ingest.importer.importer.XlsImporter')
     @patch('broker.service.spreadsheet_upload_service.SpreadsheetUploadService.async_upload')
-    def test_upload_update_route(self,
-                                 mock_upload: MagicMock,
-                                 mock_importer,
-                                 mock_storage_service,
-                                 mock_ingest):
+    def test_upload_update_route(self, mock_upload: MagicMock, mock_storage_service, mock_importer):
+        # given
         mock_upload.return_value = {
             "_links": {"self": {"href": "xxx"}},
             "uuid": {"uuid": self.submission_uuid}
@@ -72,11 +60,14 @@ class UploadSpreadsheetTestCase(TestCase):
             'submissionUuid': self.submission_uuid
         }
         # when
-        response = self.app.post('/api_upload',
-                                 data={
-                                     'params': json.dumps(params),
-                                     'file': (BytesIO(b'my file contents'), 'file.txt')
-                                 })
+        with self._app.test_client() as app:
+            response = app.post(
+                '/api_upload',
+                data={
+                    'params': json.dumps(params),
+                    'file': (BytesIO(b'my file contents'), 'file.txt')
+                }
+            )
         # then
         self._verify_upload_service_call(mock_upload, params)
         self._verify_upload_output(response)
@@ -96,59 +87,65 @@ class UploadSpreadsheetTestCase(TestCase):
 
     @patch('broker_app.request')
     @patch('broker.service.spreadsheet_upload_service.SpreadsheetUploadService.async_upload')
-    @patch('broker_app.IngestApi')
-    def test_upload_success(self, mock_ingest, mock_async_upload, mock_request):
+    def test_upload_success(self, mock_async_upload, mock_request):
         # given
-        mock_async_upload.return_value = {'uuid': {'uuid': 'uuid'}, '_links': {'self': {'href': 'url/9'}}}
+        mock_async_upload.return_value = {
+            'uuid': {'uuid': 'uuid'},
+            '_links': {'self': {'href': 'url/9'}}
+        }
 
         # when
-
-        response = self.app.post('/api_upload',
-                                 data={
-                                     'params': '{}',
-                                     'file': (BytesIO(b'my file contents'), 'file.txt')
-                                 },
-                                 headers={
-                                     'token': 'test-token'
-                                 })
-
+        with self._app.test_client() as app:
+            response = app.post(
+                '/api_upload',
+                data={
+                    'params': '{}',
+                    'file': (BytesIO(b'my file contents'), 'file.txt')
+                },
+                headers={
+                    'token': 'test-token'
+                }
+            )
         # then
         self.assertEqual(response.status_code, 201)
         self.assertRegex(str(response.data), 'url/9')
 
     @patch('broker_app.request')
     @patch('broker.service.spreadsheet_upload_service.SpreadsheetUploadService.async_upload')
-    @patch('broker_app.IngestApi')
-    def test_upload_error(self, mock_ingest, mock_async_upload, mock_request):
+    def test_upload_error(self, mock_async_upload, mock_request):
         # given
         mock_async_upload.side_effect = SpreadsheetUploadError(500, 'message', 'details')
-        # when
 
-        response = self.app.post('/api_upload',
-                                 data={
-                                     'params': '{}',
-                                     'file': (BytesIO(b'my file contents'), 'file.txt')
-                                 },
-                                 headers={
-                                     'token': 'test-token'
-                                 })
+        # when
+        with self._app.test_client() as app:
+            response = app.post(
+                '/api_upload',
+                data={
+                    'params': '{}',
+                    'file': (BytesIO(b'my file contents'), 'file.txt')
+                },
+                headers={
+                    'token': 'test-token'
+                }
+            )
         # then
         self.assertEqual(500, response.status_code)
         self.assertRegex(str(response.data), 'message')
 
     @patch('broker_app.request')
-    @patch('broker_app.IngestApi')
-    def test_upload_unauthorized(self, mock_ingest, mock_request):
+    def test_upload_unauthorized(self, mock_request):
         # when
-        response = self.app.post('/api_upload',
-                                 data={
-                                     'params': '{}',
-                                     'file': (BytesIO(b'my file contents'), 'file.txt')
-                                 },
-                                 headers={
-                                     'token': 'test-token'
-                                 })
-
+        with self._app.test_client() as app:
+            response = app.post(
+                '/api_upload',
+                data={
+                    'params': '{}',
+                    'file': (BytesIO(b'my file contents'), 'file.txt')
+                },
+                headers={
+                    'token': 'test-token'
+                }
+            )
         # then
         self.assertEqual(401, response.status_code)
         self.assertRegex(str(response.data), 'authentication')

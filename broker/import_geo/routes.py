@@ -4,14 +4,14 @@ import tempfile
 from http import HTTPStatus
 
 from flask import Blueprint, send_file, request
+from flask import current_app as app
 from flask_cors import cross_origin
 from geo_to_hca import geo_to_hca
-from ingest.api.ingestapi import IngestApi
+from hca_ingest.importer.importer import XlsImporter
 
-from ingest.importer.importer import XlsImporter
 from broker.common.util import response_json
-from broker.import_geo.exceptions import ImportGeoHttpError, InvalidGeoAccession, GenerateGeoWorkbookError, \
-    ImportProjectWorkbookError
+from broker.import_geo.exceptions import ImportGeoHttpError, InvalidGeoAccession
+from broker.import_geo.exceptions import GenerateGeoWorkbookError, ImportProjectWorkbookError
 
 import_geo_bp = Blueprint(
     'import_geo', __name__, url_prefix='/'
@@ -62,7 +62,7 @@ def _generate_geo_workbook(geo_or_srp_accession: str):
 
 
 def _import_project_from_workbook(workbook):
-    importer = XlsImporter(IngestApi())
+    importer = XlsImporter(app.ingest_api)
     token = request.headers.get('Authorization')
     project_uuid, errors = importer.import_project_from_workbook(workbook, token)
 

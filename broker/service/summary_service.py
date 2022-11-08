@@ -4,7 +4,7 @@ from functools import reduce
 from typing import Generator
 from typing import Iterable
 
-from ingest.api.ingestapi import IngestApi
+from hca_ingest.api.ingestapi import IngestApi
 from jsonpath_rw import parse
 
 from broker.common.entity_summary import EntitySummary

@@ -1,9 +1,9 @@
 from copy import copy
 
-from ingest.api.ingestapi import IngestApi
-from ingest.template.schema_template import SchemaTemplate
-from ingest.template.vanilla_spreadsheet_builder import VanillaSpreadsheetBuilder
-from ingest.template.tab_config import TabConfig
+from hca_ingest.api.ingestapi import IngestApi
+from hca_ingest.template.schema_template import SchemaTemplate
+from hca_ingest.template.vanilla_spreadsheet_builder import VanillaSpreadsheetBuilder
+from hca_ingest.template.tab_config import TabConfig
 
 from broker.service.spreadsheet_generation import type_spec_utils
 from broker.service.spreadsheet_generation.schema_spec import SchemaSpec, ParseUtils, FieldSpec, ObjectSpec, StringSpec, IntegerSpec, NumberSpec, OntologySpec, BooleanSpec

@@ -2,7 +2,7 @@ import argparse
 import uuid
 
 import jsonpickle
-from ingest.api.ingestapi import IngestApi
+from hca_ingest.api.ingestapi import IngestApi
 
 from broker.common.util.tsv_summary_util import TSVSummaryUtil
 from broker.service.summary_service import SummaryService

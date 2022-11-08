@@ -1,0 +1,9 @@
+-c requirements.txt
+assertpy
+coverage
+pylint
+pandas
+xlrd
+python-dotenv
+mock
+pytest
