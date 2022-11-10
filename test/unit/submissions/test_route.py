@@ -1,7 +1,7 @@
 import json
 import unittest
 from http import HTTPStatus
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, MagicMock
 
 from broker.submissions import ExportToSpreadsheetService
 from test.unit.test_broker_app import BrokerAppTest
@@ -85,20 +85,29 @@ class RouteTestCase(BrokerAppTest):
         submission_uuid = 'xyz-001'
         with self._app.test_client() as app:
             # when
-            response = app.post(f'/submissions/{submission_uuid}/spreadsheet',
-                                headers={'Authorization': 'test'})
+            response = app.post(f'/submissions/{submission_uuid}/spreadsheet')
 
         # then
         self.mock_ingest.get_submission_by_uuid.assert_called_once_with(submission_uuid)
         self.assertEqual(HTTPStatus.ACCEPTED, response.status_code)
         mock_async_export_and_save.assert_called_once()
 
-    def test_no_auth_header__bad_request(self):
+    def test_auth_header__passthrough(self):
+        # Given
         submission_uuid = 'xyz-001'
+        token = 'test_token'
+        self.mock_ingest.set_token = MagicMock()
+
         with self._app.test_client() as app:
             # when
-            response = app.post(f'/submissions/{submission_uuid}/spreadsheet')
-        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+            response = app.post(
+                f'/submissions/{submission_uuid}/spreadsheet',
+                headers={'Authorization': token}
+            )
+
+        # Then
+        self.mock_ingest.set_token.assert_called_once_with(token)
+        self.assertEqual(HTTPStatus.ACCEPTED, response.status_code)
 
     @patch.object(ExportToSpreadsheetService, 'async_export_and_save', return_value='test-job-id')
     def test_generate_spreadsheet__accepted__not_created(self, mock_async_export_and_save):
@@ -110,8 +119,7 @@ class RouteTestCase(BrokerAppTest):
 
         with self._app.test_client() as app:
             # when
-            response = app.post(f'/submissions/{submission_uuid}/spreadsheet',
-                                headers={'Authorization': 'test'})
+            response = app.post(f'/submissions/{submission_uuid}/spreadsheet')
 
         # then
         self.mock_ingest.get_submission_by_uuid.assert_called_once_with(submission_uuid)
@@ -130,8 +138,7 @@ class RouteTestCase(BrokerAppTest):
 
         with self._app.test_client() as app:
             # when
-            response = app.post(f'/submissions/{submission_uuid}/spreadsheet',
-                                headers={'Authorization': 'test'})
+            response = app.post(f'/submissions/{submission_uuid}/spreadsheet')
 
         # then
         self.mock_ingest.get_submission_by_uuid.assert_called_once_with(submission_uuid)
