@@ -7,5 +7,5 @@ flask
 flask-cors
 PyYAML~=5.3.1
 jsonref
-hca-ingest~=2.7.2
+hca-ingest
 geo-to-hca
