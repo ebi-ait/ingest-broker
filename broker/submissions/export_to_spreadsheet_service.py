@@ -6,8 +6,7 @@ from collections import namedtuple
 from datetime import datetime, timezone
 
 from hca_ingest.api.ingestapi import IngestApi
-from hca_ingest.downloader.data_collector import DataCollector
-from hca_ingest.downloader.downloader import XlsDownloader
+from hca_ingest.downloader.workbook import WorkbookDownloader
 from hca_ingest.utils.date import date_to_json_string
 
 SpreadsheetDetails = namedtuple("SpreadsheetDetails", "filename filepath directory")
@@ -17,11 +16,9 @@ class ExportToSpreadsheetService:
 
     def __init__(self, ingest_api: IngestApi, app=None):
         self.ingest_api = ingest_api
-        self.data_collector = DataCollector(self.ingest_api)
+        self.downloader = WorkbookDownloader(ingest_api)
         self.app = None
         self.config = None
-
-        self.downloader = XlsDownloader()
         self.logger = logging.getLogger(__name__)
         if app:
             self.init_app(app)
@@ -54,7 +51,7 @@ class ExportToSpreadsheetService:
             submission_url = submission['_links']['self']['href']
             create_date = self.update_spreadsheet_start(submission_url, job_id)
             spreadsheet_details = self.get_spreadsheet_details(storage_dir, submission_uuid, create_date)
-            workbook = self.export(submission_uuid)
+            workbook = self.downloader.get_workbook_from_submission(submission_uuid)
             self.save_spreadsheet(spreadsheet_details, workbook)
             self.update_spreadsheet_finish(create_date, submission_url, job_id)
             self.logger.info(f'Done exporting spreadsheet for submission {submission_uuid}!')
@@ -68,14 +65,6 @@ class ExportToSpreadsheetService:
         create_date = datetime.now(timezone.utc)
         self.__patch_file_generation(submission_url, create_date, job_id)
         return create_date
-
-    def export(self, submission_uuid: str):
-        self.logger.info(f'Generating Spreadsheet: {submission_uuid}')
-        entity_dict = self.data_collector.collect_data_by_submission_uuid(submission_uuid)
-        entity_list = list(entity_dict.values())
-        flattened_json = self.downloader.convert_json(entity_list)
-        workbook = self.downloader.create_workbook(flattened_json)
-        return workbook
 
     def update_spreadsheet_finish(self, create_date: datetime, submission_url: str, job_id: str):
         finished_date = datetime.now(timezone.utc)
