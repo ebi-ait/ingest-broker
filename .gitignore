@@ -118,7 +118,5 @@ venv*/
 
 test/*/*.xlsx
 
-_local/
-
 # requests_cache
 http_cache.sqlite
