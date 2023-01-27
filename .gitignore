@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *$py.class
 
@@ -117,4 +118,5 @@ venv*/
 
 test/*/*.xlsx
 
-_local/
+# requests_cache
+http_cache.sqlite

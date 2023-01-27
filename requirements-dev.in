@@ -1,9 +1,9 @@
 -c requirements.txt
 assertpy
 coverage
-pylint
-pandas
-xlrd
-python-dotenv
 mock
+pandas
+pylint
 pytest
+python-dotenv
+xlrd
