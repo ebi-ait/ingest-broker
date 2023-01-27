@@ -1,11 +1,11 @@
 boto3
-werkzeug
-jsonpickle
 expiringdict
-jsonpath-rw
 flask
 flask-cors
-PyYAML~=5.3.1
-jsonref
-hca-ingest
 geo-to-hca
+hca-ingest
+jsonpath-rw
+jsonpickle
+jsonref
+PyYAML~=5.3.1
+werkzeug
