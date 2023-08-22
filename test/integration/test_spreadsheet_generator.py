@@ -209,6 +209,7 @@ class TestSpreadsheetGenerator(TestCase):
 
         expected_tab_names1 = ["Project", "Project - Contributors", "Project - Publications",
                                "Project - Funding source(s)",
+                               "Project - HCA Bionetwork(s)",
                                "Donor organism", "Collection protocol", "Specimen from organism", "Organoid",
                                "Cell line",
                                "Imaged specimen", "Dissociation protocol", "Aggregate generation protocol",
