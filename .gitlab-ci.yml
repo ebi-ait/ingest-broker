@@ -1,11 +1,12 @@
 include:
   remote: 'https://raw.githubusercontent.com/ebi-ait/gitlab-ci-templates/master/build-release-deploy.yml'
 
-Test:
+# Reusable job for deploying to k8s
+
+# Must set $ENVIRONMENT_NAME, $INGEST_API in the job that uses this
+.test_broker: &test_broker
   stage: test
   image: quay.io/ebi-ait/ingest-base-images:python_3.10-slim
-  variables:
-    INGEST_API : https://api.ingest.dev.archive.data.humancellatlas.org/
   before_script:
     - pip install --upgrade pip
     - pip install pip-tools
@@ -15,3 +16,19 @@ Test:
   artifacts:
     reports:
       junit: results.xml
+
+Test dev:
+  only:
+    - dev
+  variables:
+    ENVIRONMENT_NAME: dev
+    INGEST_API: https://api.ingest.dev.archive.data.humancellatlas.org/
+  <<: *test_broker
+
+Test staging:
+  only:
+    - master
+  variables:
+    ENVIRONMENT_NAME: staging
+    INGEST_API: https://api.ingest.staging.archive.data.humancellatlas.org/
+  <<: *test_broker

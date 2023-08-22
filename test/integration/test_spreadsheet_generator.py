@@ -22,8 +22,7 @@ class TestSpreadsheetGenerator(TestCase):
     def test_link_column_generation(self):
         cell_suspension_spec = TypeSpec("cell_suspension", IncludeAllModules(), False, LinkSpec(["donor_organism"], []))
 
-        ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
-        ingest_api = IngestApi(ingest_url)
+        ingest_api = IngestApi()
         parsed_tab = SpreadsheetGenerator(ingest_api).tab_for_type(cell_suspension_spec)
 
         self.assertTrue("donor_organism.biomaterial_core.biomaterial_id" in [col.path for col in parsed_tab.columns])
@@ -81,8 +80,7 @@ class TestSpreadsheetGenerator(TestCase):
 
         types = [test_type_spec_1, test_type_spec_2, test_type_spec_3, test_type_spec_4, test_type_spec_5]
 
-        ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
-        ingest_api = IngestApi(ingest_url)
+        ingest_api = IngestApi()
 
         parsed_tabs = []
         for type_spec in types:
@@ -102,8 +100,7 @@ class TestSpreadsheetGenerator(TestCase):
                             [tab.columns for tab in template_tabs]))
 
     def test_user_friendly_names(self):
-        ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
-        ingest_api = IngestApi(ingest_url)
+        ingest_api = IngestApi()
         spreadsheet_generator = SpreadsheetGenerator(ingest_api)
 
         test_spreadsheet_spec = SpreadsheetSpec(
@@ -166,8 +163,7 @@ class TestSpreadsheetGenerator(TestCase):
         self.assertFalse(name_error)
 
     def test_generate(self):
-        ingest_url = "https://api.ingest.dev.archive.data.humancellatlas.org"
-        ingest_api = IngestApi(ingest_url)
+        ingest_api = IngestApi()
         spreadsheet_generator = SpreadsheetGenerator(ingest_api)
 
         test_spreadsheet_spec = SpreadsheetSpec(
