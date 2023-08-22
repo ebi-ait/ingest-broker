@@ -208,8 +208,8 @@ class TestSpreadsheetGenerator(TestCase):
         # from "Funding source(s)" to "Funders" here: https://schema.dev.archive.data.humancellatlas.org/type/project/14.1.0/project
 
         expected_tab_names1 = ["Project", "Project - Contributors", "Project - Publications",
-                               "Project - Funding source(s)",
                                "Project - HCA Bionetwork(s)",
+                               "Project - Funding source(s)",
                                "Donor organism", "Collection protocol", "Specimen from organism", "Organoid",
                                "Cell line",
                                "Imaged specimen", "Dissociation protocol", "Aggregate generation protocol",
