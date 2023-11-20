@@ -11,6 +11,8 @@ from flask import Flask, request, redirect, send_file
 from flask import json
 from flask_cors import CORS, cross_origin
 from hca_ingest.api.ingestapi import IngestApi
+from hca_ingest.utils.s2s_token_client import S2STokenClient, ServiceCredential
+from hca_ingest.utils.token_manager import TokenManager
 
 from broker.import_geo.routes import import_geo_bp
 from broker.schemas.routes import schemas_bp
@@ -130,7 +132,8 @@ def create_app():
     CORS(app, expose_headers=["Content-Disposition"])
     app.config['CORS_HEADERS'] = 'Content-Type'
 
-    app.ingest_api = IngestApi()
+    token_manager = init_token_manager()
+    app.ingest_api = IngestApi(token_manager=token_manager)
     app.IngestApi = IngestApi
     spreadsheet_generator = SpreadsheetGenerator(app.ingest_api)
     app.spreadsheet_job_manager = SpreadsheetJobManager(spreadsheet_generator, app.SPREADSHEET_STORAGE_DIR)
@@ -143,6 +146,15 @@ def create_app():
     add_routes(app)
 
     return app
+
+
+def init_token_manager():
+    gcp_credentials_file = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+    credential = ServiceCredential.from_file(gcp_credentials_file)
+    audience = os.environ.get('INGEST_API_JWT_AUDIENCE')
+    s2s_token_client = S2STokenClient(credential, audience)
+    token_manager = TokenManager(s2s_token_client)
+    return token_manager
 
 
 if __name__ == '__main__':

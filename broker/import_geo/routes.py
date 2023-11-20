@@ -63,8 +63,7 @@ def _generate_geo_workbook(geo_or_srp_accession: str):
 
 def _import_project_from_workbook(workbook):
     importer = XlsImporter(app.ingest_api)
-    token = request.headers.get('Authorization')
-    project_uuid, errors = importer.import_project_from_workbook(workbook, token)
+    project_uuid, errors = importer.import_project_from_workbook(workbook, token=None)
 
     if errors:
         error_messages = ' ,'.join([e.get('details') for e in errors if e.get('details')])

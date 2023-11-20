@@ -25,11 +25,9 @@ def generate_spreadsheet(submission_uuid):
     message = 'The spreadsheet is being generated.'
     if job_not_created(spreadsheet_job) or job_finished(spreadsheet_job):
         token = request.headers.get('Authorization')
+        if not token:
+            return response_json(HTTPStatus.UNAUTHORIZED, {"message": "unauthorized", "status": 401})
         ingest_api = app.ingest_api
-        if token:
-            # need a dedicated ingest client that can be authenticated
-            ingest_api = app.IngestApi()
-            ingest_api.set_token(token)
         spreadsheet_export_service = ExportToSpreadsheetService(app=app, ingest_api=ingest_api)
         job_id = spreadsheet_export_service.async_export_and_save(submission_uuid, app.SPREADSHEET_STORAGE_DIR)
         return response_json(HTTPStatus.ACCEPTED, {'message': message, 'job_id': job_id})

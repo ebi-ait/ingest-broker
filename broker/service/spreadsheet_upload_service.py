@@ -18,23 +18,17 @@ class SpreadsheetUploadService:
         self.storage_service = storage_service
         self.importer = importer
 
-    def async_upload(self, token: str, request_file: FileStorage, params: dict):
+    def async_upload(self, request_file: FileStorage, params: dict):
         project_uuid = params.get('projectUuid')
         submission_uuid = params.get('submissionUuid')
         is_update = params.get('isUpdate')
         update_project = params.get('updateProject')
 
-        self._set_token(token)
         submission_resource = self._create_or_get_submission(submission_uuid)
 
         submission_uuid = submission_resource["uuid"]["uuid"]
         submission_url = submission_resource["_links"]["self"]["href"]
         filename = secure_filename(request_file.filename)
-
-        # Unset token before creating/updating entities
-        # This is temporary until we have refresh token support
-        # See dcp-618
-        self.ingest_api.unset_token()
 
         if is_update:
             path = self._store_spreadsheet_updates(filename, request_file, submission_uuid)
@@ -62,11 +56,6 @@ class SpreadsheetUploadService:
         else:
             submission_resource = self.ingest_api.create_submission()
         return submission_resource
-
-    def _set_token(self, token):
-        if token is None:
-            raise SpreadsheetUploadError(401, "An authentication token must be supplied when uploading a spreadsheet")
-        self.ingest_api.set_token(token)
 
     def upload(self, submission_url, path, project_uuid=None, update_project=False):
         _LOGGER.info('Spreadsheet started!')
