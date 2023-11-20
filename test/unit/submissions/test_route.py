@@ -82,10 +82,12 @@ class RouteTestCase(BrokerAppTest):
         tests the happy path for the controller
         """
         # given
+        token = 'test_token'
         submission_uuid = 'xyz-001'
         with self._app.test_client() as app:
             # when
-            response = app.post(f'/submissions/{submission_uuid}/spreadsheet')
+            response = app.post(f'/submissions/{submission_uuid}/spreadsheet',
+                                headers={'Authorization': token})
 
         # then
         self.mock_ingest.get_submission_by_uuid.assert_called_once_with(submission_uuid)
@@ -106,7 +108,7 @@ class RouteTestCase(BrokerAppTest):
             )
 
         # Then
-        self.mock_ingest.set_token.assert_called_once_with(token)
+        self.mock_ingest.set_token.assert_not_called()
         self.assertEqual(HTTPStatus.ACCEPTED, response.status_code)
 
     @patch.object(ExportToSpreadsheetService, 'async_export_and_save', return_value='test-job-id')
@@ -116,10 +118,11 @@ class RouteTestCase(BrokerAppTest):
             'lastSpreadsheetGenerationJob': None
         }
         submission_uuid = 'xyz-001'
-
+        token = 'test_token'
         with self._app.test_client() as app:
             # when
-            response = app.post(f'/submissions/{submission_uuid}/spreadsheet')
+            response = app.post(f'/submissions/{submission_uuid}/spreadsheet',
+                                headers={'Authorization': token})
 
         # then
         self.mock_ingest.get_submission_by_uuid.assert_called_once_with(submission_uuid)

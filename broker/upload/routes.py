@@ -34,7 +34,7 @@ def upload_spreadsheet():
     token = request.headers.get('Authorization')
     if not token:
         # TODO need proper validation
-        raise SpreadsheetUploadError(HTTPStatus.UNAUTHORIZED, "An authentication token must be supplied when uploading a spreadsheet")
+        return response_json(HTTPStatus.UNAUTHORIZED, UploadResponse("An authentication token must be supplied when uploading a spreadsheet", "unauthorized"))
 
     request_file = request.files['file']
     params_str = request.form.get('params')

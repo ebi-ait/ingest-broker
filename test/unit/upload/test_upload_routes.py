@@ -1,5 +1,7 @@
 import json
 import unittest
+from email.policy import HTTP
+from http import HTTPStatus
 from io import BytesIO
 from unittest.mock import ANY, patch, MagicMock
 
@@ -20,7 +22,9 @@ class UploadSpreadsheetTestCase(BrokerAppTest):
     @patch('hca_ingest.importer.importer.XlsImporter')
     @patch('broker.service.spreadsheet_storage.SpreadsheetStorageService')
     @patch('broker.service.spreadsheet_upload_service.SpreadsheetUploadService.async_upload')
-    def test_upload_route(self, mock_upload: MagicMock, mock_storage_service, mock_importer):
+    def test_upload_route(self, mock_upload: MagicMock,
+                          mock_storage_service,
+                          mock_importer):
         # given
         mock_upload.return_value = {
             "_links": {"self": {"href": "xxx"}},
@@ -39,6 +43,9 @@ class UploadSpreadsheetTestCase(BrokerAppTest):
                 data={
                     'params': json.dumps(params),
                     'file': (BytesIO(b'my file contents'), 'file.txt')
+                },
+                headers={
+                    'Authorization': 'test-token'
                 }
             )
         # then
@@ -66,6 +73,9 @@ class UploadSpreadsheetTestCase(BrokerAppTest):
                 data={
                     'params': json.dumps(params),
                     'file': (BytesIO(b'my file contents'), 'file.txt')
+                },
+                headers={
+                    'Authorization': 'test-token'
                 }
             )
         # then
@@ -80,7 +90,6 @@ class UploadSpreadsheetTestCase(BrokerAppTest):
 
     def _verify_upload_service_call(self, mock_upload, params: dict):
         mock_upload.assert_called_once_with(
-            ANY,  # token
             ANY,  # request_file
             params
         )
@@ -103,18 +112,18 @@ class UploadSpreadsheetTestCase(BrokerAppTest):
                     'file': (BytesIO(b'my file contents'), 'file.txt')
                 },
                 headers={
-                    'token': 'test-token'
+                    'Authorization': 'test-token'
                 }
             )
         # then
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, HTTPStatus.CREATED)
         self.assertRegex(str(response.data), 'url/9')
 
     @patch('broker_app.request')
     @patch('broker.service.spreadsheet_upload_service.SpreadsheetUploadService.async_upload')
     def test_upload_error(self, mock_async_upload, mock_request):
         # given
-        mock_async_upload.side_effect = SpreadsheetUploadError(500, 'message', 'details')
+        mock_async_upload.side_effect = SpreadsheetUploadError(HTTPStatus.INTERNAL_SERVER_ERROR, 'message', 'details')
 
         # when
         with self._app.test_client() as app:
@@ -125,11 +134,11 @@ class UploadSpreadsheetTestCase(BrokerAppTest):
                     'file': (BytesIO(b'my file contents'), 'file.txt')
                 },
                 headers={
-                    'token': 'test-token'
+                    'Authorization': 'test-token'
                 }
             )
         # then
-        self.assertEqual(500, response.status_code)
+        self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
         self.assertRegex(str(response.data), 'message')
 
     @patch('broker_app.request')
@@ -141,13 +150,10 @@ class UploadSpreadsheetTestCase(BrokerAppTest):
                 data={
                     'params': '{}',
                     'file': (BytesIO(b'my file contents'), 'file.txt')
-                },
-                headers={
-                    'token': 'test-token'
                 }
             )
         # then
-        self.assertEqual(401, response.status_code)
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
         self.assertRegex(str(response.data), 'authentication')
 
 
