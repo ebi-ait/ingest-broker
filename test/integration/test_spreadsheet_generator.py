@@ -241,7 +241,9 @@ class TestSpreadsheetGenerator(TestCase):
             "project.array_express_accessions",
             "project.insdc_study_accessions",
             "project.biostudies_accessions",
-            "project.estimated_cell_count"
+            "project.estimated_cell_count",
+            "project.data_use_restriction",
+            "project.duos_id"
         ]
         actual_col_names = list(df.iloc[2])
         self.assertEqual(expected_col_names, actual_col_names)
