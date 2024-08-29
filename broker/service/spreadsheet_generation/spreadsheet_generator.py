@@ -206,7 +206,7 @@ class SpreadsheetGenerator:
                 columns.extend(self.columns_for_ontology_module(field, context))
             elif self.field_is_object(field):
                 if field.multivalue:
-                    if field.field_name in ['reagents', 'familial_relationships']:
+                    if field.field_name in ['reagents', 'familial_relationships', 'pcr']:
                         columns.extend(self.columns_for_field(field, context=context + [field.field_name]))
                     else:
                         # generate sub-tabs for this multivalue module

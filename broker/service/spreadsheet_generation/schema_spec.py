@@ -102,10 +102,21 @@ class ParseUtils:
     def parse_object_field(field_name: str, data: Dict) -> ObjectSpec:
         sub_fields = dict(filter(lambda entry: isinstance(entry[1], dict) and "value_type" in entry[1], data.items()))
         field_specs = [ParseUtils.parse_field(entry[0], entry[1]) for entry in sub_fields.items()]
-        return ObjectSpec(field_name, data["multivalue"], data["description"], data["required"], data["identifiable"],
-                          data["external_reference"], data["schema"]["high_level_entity"],
-                          data["schema"]["domain_entity"], data["schema"]["module"], data["schema"]["version"],
-                          data["schema"]["url"], field_specs)
+
+        return ObjectSpec(
+            field_name,
+            data.get("multivalue", False),
+            data.get("description", ""),
+            data.get("required", False),
+            data.get("identifiable", False),
+            data.get("external_reference", False),
+            data.get("schema", {}).get("high_level_entity", ""),
+            data.get("schema", {}).get("domain_entity", ""),
+            data.get("schema", {}).get("module", ""),
+            data.get("schema", {}).get("version", ""),
+            data.get("schema", {}).get("url", ""),
+            field_specs
+        )
 
     @staticmethod
     def parse_ontology_field(field_name: str, data: Dict) -> OntologySpec:
@@ -135,7 +146,7 @@ class ParseUtils:
         elif value_type == "boolean":
             return ParseUtils.parse_boolean_field(field_name, data_dict)
         elif value_type == "object":
-            if data_dict["schema"]["domain_entity"] == "ontology":
+            if "schema" in data_dict and  data_dict["schema"]["domain_entity"] == "ontology":
                 return ParseUtils.parse_ontology_field(field_name, data_dict)
             else:
                 return ParseUtils.parse_object_field(field_name, data_dict)
