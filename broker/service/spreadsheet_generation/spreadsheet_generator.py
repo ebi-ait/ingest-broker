@@ -1,6 +1,8 @@
+import os
 from copy import copy
 
 from hca_ingest.api.ingestapi import IngestApi
+from hca_ingest.template.ena_spreadsheet_builder import ENASpreadsheetBuilder
 from hca_ingest.template.schema_template import SchemaTemplate
 from hca_ingest.template.vanilla_spreadsheet_builder import VanillaSpreadsheetBuilder
 from hca_ingest.template.tab_config import TabConfig
@@ -154,6 +156,7 @@ class SpreadsheetGenerator:
     def __init__(self, ingest_api: IngestApi):
         self.ingest_api = ingest_api
         self.schema_template = SchemaTemplate(ingest_api_url=ingest_api.url)
+        self.project_env = os.getenv('PROJECT_ENV', 'default').upper()
 
     def generate(self, spreadsheet_spec: SpreadsheetSpec, output_file_path: Optional[str]) -> str:
         parsed_tabs = []
@@ -175,13 +178,32 @@ class SpreadsheetGenerator:
             tab_config = TabConfig().load(yaml_file.name)
             spreadsheet_file = open(output_file_path, "w") if output_file_path is not None else tempfile.NamedTemporaryFile('w')
 
-            spreadsheet_builder = VanillaSpreadsheetBuilder(spreadsheet_file.name, True)
-            spreadsheet_builder.include_schemas_tab = True
-            spreadsheet_builder.build(SchemaTemplate(self.ingest_api.url, json_schema_docs=self.schema_template.json_schemas, tab_config=tab_config))
-            spreadsheet_builder.save_spreadsheet()
-            spreadsheet_file.close()
+            if self.project_env == 'ENA':
+                # For ENA, we generate a TSV file
+                if output_file_path:
+                    output_tsv_path = output_file_path.replace(".xlsx", ".tsv")
+                else:
+                    output_tsv_path = "output.tsv"
 
-            return spreadsheet_file.name
+                # Use os.path.expanduser to handle paths with ~
+                output_tsv_path = os.path.expanduser(output_tsv_path)
+
+                # Create the TSV using the ENA builder
+                ena_builder = ENASpreadsheetBuilder(output_tsv_path)
+                ena_builder.create_tsv()
+                ena_builder.build(SchemaTemplate(self.ingest_api.url, json_schema_docs=self.schema_template.json_schemas, tab_config=tab_config))
+                ena_builder.save_tsv()
+
+                print(f"TSV file saved to {output_tsv_path}")
+                return output_tsv_path
+            else:
+                # For HCA, we generate an Excel file
+                spreadsheet_builder = VanillaSpreadsheetBuilder(spreadsheet_file.name, True)
+                spreadsheet_builder.include_schemas_tab = True
+                spreadsheet_builder.build(SchemaTemplate(self.ingest_api.url, json_schema_docs=self.schema_template.json_schemas, tab_config=tab_config))
+                spreadsheet_builder.save_spreadsheet()
+                spreadsheet_file.close()
+                return spreadsheet_file.name
 
     def tab_for_type(self, type_spec: TypeSpec) -> ParsedTab:
         schema_name = type_spec.schema_name
@@ -201,6 +223,7 @@ class SpreadsheetGenerator:
         subtabs: List[ParsedTab] = []
 
         fields = self.filter_fields(schema_spec.fields, include_modules)
+        print("---fields: ", fields)
         for field in fields:
             if self.field_is_ontology(field):
                 columns.extend(self.columns_for_ontology_module(field, context))
@@ -348,7 +371,23 @@ class SpreadsheetGenerator:
         if isinstance(modules_to_include, IncludeAllModules):
             return field_specs
         else:
-            return [f for f in field_specs if f.field_name in modules_to_include.modules]
+            filtered_fields = []
+
+            for f in field_specs:
+                print(f"Checking field: {f.field_name}")
+
+                if isinstance(f, ObjectSpec):
+                    for subfield in f.fields:
+                        if subfield.field_name in modules_to_include.modules:
+                            print(f"Added nested field: {subfield.field_name}")
+                            filtered_fields.append(subfield)
+                else:
+                    if f.field_name in modules_to_include.modules:
+                        filtered_fields.append(f)
+                        print(f"Added field: {f.field_name}")
+
+            print(f"Filtered fields: {filtered_fields}")
+            return filtered_fields
 
     @staticmethod
     def template_tabs_from_parsed_tabs(parsed_tabs: List[ParsedTab]) -> List[TemplateTab]:

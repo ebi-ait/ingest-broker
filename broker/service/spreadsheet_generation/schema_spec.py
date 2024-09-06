@@ -79,9 +79,17 @@ class ParseUtils:
 
     @staticmethod
     def parse_string_field(field_name: str, data: Dict) -> StringSpec:
-        return StringSpec(field_name, data["multivalue"], data["description"], data["required"],
-                          data["identifiable"], data["external_reference"], data["user_friendly"],
-                          data.get("example"), data.get("guidelines"))
+        return StringSpec(
+            field_name,
+            data.get("multivalue", False),
+            data.get("description", ""),
+            data.get("required", False),
+            data.get("identifiable", False),
+            data.get("external_reference", False),
+            data.get("user_friendly", field_name),
+            data.get("example", ""),
+            data.get("guidelines", "")
+        )
 
     @staticmethod
     def parse_number_field(field_name: str, data: Dict) -> NumberSpec:
@@ -136,22 +144,42 @@ class ParseUtils:
 
     @staticmethod
     def parse_field(field_name: str, data_dict: Dict) -> FieldSpec:
+        print(f"parse_field called with field_name: {field_name}")
+        print(f"data_dict: {data_dict}")
+
+        # Detect value type
         value_type = data_dict["value_type"]
+        print(f"Detected value_type: {value_type}")
+
+        # Process based on value_type
         if value_type == "string":
-            return ParseUtils.parse_string_field(field_name, data_dict)
+            print(f"Parsing string field: {field_name}")
+            result = ParseUtils.parse_string_field(field_name, data_dict)
         elif value_type == "number":
-            return ParseUtils.parse_number_field(field_name, data_dict)
+            print(f"Parsing number field: {field_name}")
+            result = ParseUtils.parse_number_field(field_name, data_dict)
         elif value_type == "integer":
-            return ParseUtils.parse_integer_field(field_name, data_dict)
+            print(f"Parsing integer field: {field_name}")
+            result = ParseUtils.parse_integer_field(field_name, data_dict)
         elif value_type == "boolean":
-            return ParseUtils.parse_boolean_field(field_name, data_dict)
+            print(f"Parsing boolean field: {field_name}")
+            result = ParseUtils.parse_boolean_field(field_name, data_dict)
         elif value_type == "object":
-            if "schema" in data_dict and  data_dict["schema"]["domain_entity"] == "ontology":
-                return ParseUtils.parse_ontology_field(field_name, data_dict)
+            if "schema" in data_dict and data_dict["schema"].get("domain_entity") == "ontology":
+                print(f"Parsing ontology field: {field_name}")
+                result = ParseUtils.parse_ontology_field(field_name, data_dict)
             else:
-                return ParseUtils.parse_object_field(field_name, data_dict)
+                print(f"Parsing object field: {field_name}")
+                result = ParseUtils.parse_object_field(field_name, data_dict)
         else:
+            # Unknown value type
+            print(f"Unknown value type encountered: {value_type}")
             raise Exception(f'Unknown value type "{value_type}", required string, number, or object')
+
+        # Output value
+        print(f"Resulting FieldSpec: {result}")
+
+        return result
 
     @staticmethod
     def parse_schema_spec(schema_name: str, data: Dict) -> SchemaSpec:
