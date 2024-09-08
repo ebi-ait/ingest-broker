@@ -6,7 +6,8 @@ from hca_ingest.template.vanilla_spreadsheet_builder import VanillaSpreadsheetBu
 from hca_ingest.template.tab_config import TabConfig
 
 from broker.service.spreadsheet_generation import type_spec_utils
-from broker.service.spreadsheet_generation.schema_spec import SchemaSpec, ParseUtils, FieldSpec, ObjectSpec, StringSpec, IntegerSpec, NumberSpec, OntologySpec, BooleanSpec
+from broker.service.spreadsheet_generation.schema_spec import SchemaSpec, ParseUtils, FieldSpec, ObjectSpec, StringSpec, \
+    IntegerSpec, NumberSpec, OntologySpec, BooleanSpec
 
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Union
@@ -92,7 +93,8 @@ class TypeSpec:
     def from_json_dict(data: Dict) -> 'TypeSpec':
         try:
             link_spec = LinkSpec.from_dict(data["linkSpec"]) if data.get("linkSpec") else None
-            include_modules = IncludeSomeModules(data["includeModules"]) if isinstance(data["includeModules"], list) else IncludeAllModules()
+            include_modules = IncludeSomeModules(data["includeModules"]) if isinstance(data["includeModules"],
+                                                                                       list) else IncludeAllModules()
             return TypeSpec(data["schemaName"], include_modules, data["embedProcess"], link_spec)
         except (IndexError, KeyError) as e:
             raise
@@ -100,7 +102,8 @@ class TypeSpec:
     def to_json_dict(self) -> Dict:
         return OrderedDict({
             "schemaName": self.schema_name,
-            "includeModules": self.include_modules.modules if isinstance(self.include_modules, IncludeSomeModules) else "ALL",
+            "includeModules": self.include_modules.modules if isinstance(self.include_modules,
+                                                                         IncludeSomeModules) else "ALL",
             "embedProcess": self.embed_process,
             "linkSpec": self.link_spec.to_json_dict() if self.link_spec is not None else None
         })
@@ -173,11 +176,14 @@ class SpreadsheetGenerator:
         with tempfile.NamedTemporaryFile('w') as yaml_file:
             yaml.dump(template_yaml.to_yml_dict(), yaml_file)
             tab_config = TabConfig().load(yaml_file.name)
-            spreadsheet_file = open(output_file_path, "w") if output_file_path is not None else tempfile.NamedTemporaryFile('w')
+            spreadsheet_file = open(output_file_path,
+                                    "w") if output_file_path is not None else tempfile.NamedTemporaryFile('w')
 
             spreadsheet_builder = VanillaSpreadsheetBuilder(spreadsheet_file.name, True)
             spreadsheet_builder.include_schemas_tab = True
-            spreadsheet_builder.build(SchemaTemplate(self.ingest_api.url, json_schema_docs=self.schema_template.json_schemas, tab_config=tab_config))
+            spreadsheet_builder.build(
+                SchemaTemplate(self.ingest_api.url, json_schema_docs=self.schema_template.json_schemas,
+                               tab_config=tab_config))
             spreadsheet_builder.save_spreadsheet()
             spreadsheet_file.close()
 
@@ -196,7 +202,8 @@ class SpreadsheetGenerator:
 
         return parsed_tab
 
-    def _generate_tab(self, tab_name: str, schema_spec: SchemaSpec, include_modules: IncludeModules, context: List[str]) -> ParsedTab:
+    def _generate_tab(self, tab_name: str, schema_spec: SchemaSpec, include_modules: IncludeModules,
+                      context: List[str]) -> ParsedTab:
         columns: List[TabColumn] = []
         subtabs: List[ParsedTab] = []
 
@@ -231,8 +238,26 @@ class SpreadsheetGenerator:
         try:
             parent_schema_json = [s for s in self.schema_template.json_schemas
                                   if "name" in s and s["name"] == parent_schema.field_name][0]
-            sub_schema_display_name = parent_schema_json["properties"][sub_module.field_name]["user_friendly"]
-            return sub_schema_display_name
+
+            properties = parent_schema_json["properties"]
+            if sub_module.field_name in properties:
+                # Get the nested field
+                field = properties[sub_module.field_name]
+
+                # Check for 'user_friendly', otherwise 'title' for MorPhiC, or fall back to field_name
+                sub_schema_display_name = field.get("user_friendly") or field.get("title")
+                return sub_schema_display_name if sub_schema_display_name else sub_module.field_name
+            else:
+                # If the submodule is deeper nested (e.g., "genes" under "content")
+                for prop in properties.values():
+                    if isinstance(prop, dict) and "properties" in prop:
+                        if sub_module.field_name in prop["properties"]:
+                            field = prop["properties"][sub_module.field_name]
+                            sub_schema_display_name = field.get("user_friendly") or field.get("title")
+                            return sub_schema_display_name if sub_schema_display_name else sub_module.field_name
+
+            return sub_module.field_name
+
         except (IndexError, KeyError):
             return sub_module.field_name
 
@@ -247,7 +272,8 @@ class SpreadsheetGenerator:
         if not link_spec:
             return []
         else:
-            return [self.link_column_for_schema(ParseUtils.parse_schema_spec(entity, self.metadata_properties_for_type(entity)))
+            return [self.link_column_for_schema(
+                ParseUtils.parse_schema_spec(entity, self.metadata_properties_for_type(entity)))
                     for entity in link_spec.link_entities + link_spec.link_protocols]
 
     def link_column_for_schema(self, schema_spec: SchemaSpec) -> TabColumn:
@@ -303,8 +329,9 @@ class SpreadsheetGenerator:
         if SpreadsheetGenerator.field_is_atomic(field):
             return [SpreadsheetGenerator.parse_atomic_column(field, context)]
         elif SpreadsheetGenerator.field_is_object(field):
-            return SpreadsheetGenerator.flatten([SpreadsheetGenerator.columns_for_field(field, context + [field.field_name])
-                                                 for field in field.fields])
+            return SpreadsheetGenerator.flatten(
+                [SpreadsheetGenerator.columns_for_field(field, context + [field.field_name])
+                 for field in field.fields])
 
     def process_columns(self) -> List[TabColumn]:
         process_schema_spec = ParseUtils.parse_schema_spec("process", self.metadata_properties_for_type("process"))
@@ -313,7 +340,7 @@ class SpreadsheetGenerator:
     @staticmethod
     def field_is_atomic(field: FieldSpec) -> bool:
         return isinstance(field, StringSpec) or isinstance(field, NumberSpec) or \
-               isinstance(field, IntegerSpec) or isinstance(field, BooleanSpec)
+            isinstance(field, IntegerSpec) or isinstance(field, BooleanSpec)
 
     @staticmethod
     def field_is_object(field: FieldSpec) -> bool:
@@ -353,8 +380,9 @@ class SpreadsheetGenerator:
     @staticmethod
     def template_tabs_from_parsed_tabs(parsed_tabs: List[ParsedTab]) -> List[TemplateTab]:
         all_tabs = SpreadsheetGenerator.flatten([[tab] + tab.sub_tabs for tab in parsed_tabs])
-        return [TemplateTab(t.schema_name, SpreadsheetGenerator.chomp_32(t.display_name), [col.path for col in t.columns])
-                for t in all_tabs]
+        return [
+            TemplateTab(t.schema_name, SpreadsheetGenerator.chomp_32(t.display_name), [col.path for col in t.columns])
+            for t in all_tabs]
 
     @staticmethod
     def flatten(list_of_lists: List[List]) -> List:
