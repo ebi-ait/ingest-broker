@@ -45,7 +45,7 @@ class SpreadsheetJobManager:
 
         self.logger = logging.getLogger(__name__)
 
-    def create_job(self, spreadsheet_spec: SpreadsheetSpec, filename: str) -> JobSpec:
+    def create_job(self, spreadsheet_spec: SpreadsheetSpec, filename: str, experiment_type: str = None) -> JobSpec:
         job_id = spreadsheet_spec.hashcode()
         spreadsheet_output_path = f'{self.output_dir_path}/{job_id}.xlsx'
         job_spec = JobSpec(JobStatus.STARTED, job_id, spreadsheet_output_path, filename)
@@ -54,19 +54,19 @@ class SpreadsheetJobManager:
         with open(job_spec_path, "w") as job_spec_file:
             json.dump(job_spec.to_dict(), job_spec_file)
 
-        self.worker_pool.submit(lambda: self._do_create_spreadsheet_job(spreadsheet_spec, job_spec_path, spreadsheet_output_path))
+        self.worker_pool.submit(lambda: self._do_create_spreadsheet_job(spreadsheet_spec, job_spec_path, spreadsheet_output_path, experiment_type))
 
         return job_spec
 
-    def _do_create_spreadsheet_job(self, spreadsheet_spec: SpreadsheetSpec, job_spec_path: str, output_path: str):
-        job_result = self._maybe_create_spreadsheet(spreadsheet_spec, output_path)
+    def _do_create_spreadsheet_job(self, spreadsheet_spec: SpreadsheetSpec, job_spec_path: str, output_path: str, experiment_type: str = None):
+        job_result = self._maybe_create_spreadsheet(spreadsheet_spec, output_path, experiment_type)
         job_spec = self.load_job_spec_from_path(job_spec_path)
         completed_job_spec = JobSpec(job_result, job_spec.job_id, output_path, job_spec.filename)
         self.write_job_spec(completed_job_spec, job_spec_path)
 
-    def _maybe_create_spreadsheet(self, spreadsheet_spec: SpreadsheetSpec, output_path: str) -> JobStatus:
+    def _maybe_create_spreadsheet(self, spreadsheet_spec: SpreadsheetSpec, output_path: str, experiment_type: str = None) -> JobStatus:
         try:
-            self.spreadsheet_generator.generate(spreadsheet_spec, output_path)
+            self.spreadsheet_generator.generate(spreadsheet_spec, output_path, experiment_type)
             return JobStatus.COMPLETE
         except Exception as e:
             self.logger.exception(e)

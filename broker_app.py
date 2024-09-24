@@ -59,7 +59,8 @@ def add_routes(app):
         request_json = json.loads(request.data)
         filename = request_json["filename"]
         spreadsheet_spec = SpreadsheetSpec.from_dict(request_json["spec"])
-        job_spec = app.spreadsheet_job_manager.create_job(spreadsheet_spec, filename)
+        experiment_type = request_json["spec"].get("experiment_type", None)
+        job_spec = app.spreadsheet_job_manager.create_job(spreadsheet_spec, filename, experiment_type=experiment_type)
 
         return app.response_class(
             response=jsonpickle.encode({

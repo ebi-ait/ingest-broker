@@ -158,12 +158,12 @@ class SpreadsheetGenerator:
         self.ingest_api = ingest_api
         self.schema_template = SchemaTemplate(ingest_api_url=ingest_api.url)
 
-    def generate(self, spreadsheet_spec: SpreadsheetSpec, output_file_path: Optional[str]) -> str:
+    def generate(self, spreadsheet_spec: SpreadsheetSpec, output_file_path: Optional[str], experiment_type: str = None) -> str:
         parsed_tabs = []
         type_specs = copy(spreadsheet_spec.types)
         type_spec_utils.sort(type_specs)
         for type_spec in type_specs:
-            tab_for_type = self.tab_for_type(type_spec)
+            tab_for_type = self.tab_for_type(type_spec, experiment_type)
             parsed_tabs.append(tab_for_type)
 
         template_tabs = self.template_tabs_from_parsed_tabs(parsed_tabs)
@@ -189,21 +189,21 @@ class SpreadsheetGenerator:
 
             return spreadsheet_file.name
 
-    def tab_for_type(self, type_spec: TypeSpec) -> ParsedTab:
+    def tab_for_type(self, type_spec: TypeSpec, experiment_type: Optional[str]) -> ParsedTab:
         schema_name = type_spec.schema_name
         schema_properties = self.metadata_properties_for_type(schema_name)
         schema_spec = ParseUtils.parse_schema_spec(schema_name, schema_properties)
 
         parsed_tab = self._generate_tab(self.tab_name_for_type(schema_spec), schema_spec,
                                         include_modules=type_spec.include_modules,
-                                        context=[schema_name])
+                                        context=[schema_name], experiment_type=experiment_type)
         parsed_tab.columns.extend(self.links_for_tab(type_spec))
         parsed_tab.columns.extend(self.process_columns() if type_spec.embed_process else [])
 
         return parsed_tab
 
     def _generate_tab(self, tab_name: str, schema_spec: SchemaSpec, include_modules: IncludeModules,
-                      context: List[str]) -> ParsedTab:
+                      context: List[str], experiment_type: Optional[str]) -> ParsedTab:
         columns: List[TabColumn] = []
         subtabs: List[ParsedTab] = []
 
@@ -212,6 +212,8 @@ class SpreadsheetGenerator:
             if self.field_is_ontology(field):
                 columns.extend(self.columns_for_ontology_module(field, context))
             elif self.field_is_object(field):
+                if field.field_name == "genes" and experiment_type == "pooled":
+                    field.multivalue = True # MorPhiC-specific scenario for pooled experiments
                 if field.multivalue:
                     if field.field_name in ['reagents', 'familial_relationships', 'pcr']:
                         columns.extend(self.columns_for_field(field, context=context + [field.field_name]))
@@ -219,7 +221,8 @@ class SpreadsheetGenerator:
                         # generate sub-tabs for this multivalue module
                         subtab_name = f'{tab_name} - {self.tab_name_for_sub_module(schema_spec, field)}'
                         subtab = self._generate_tab(subtab_name, field, IncludeAllModules(),
-                                                    context=context + [field.field_name])
+                                                    context=context + [field.field_name],
+                                                    experiment_type=experiment_type)
                         subtabs.append(subtab)
                 else:
                     columns.extend(self.columns_for_field(field, context=context + [field.field_name]))
@@ -283,7 +286,11 @@ class SpreadsheetGenerator:
             return TabColumn(name=f'{display_name} - ID',
                              description="A Biomaterial id",
                              example="ABC12345",
-                             path=f'{schema_spec.field_name}.biomaterial_core.biomaterial_id')
+                             path=f'{schema_spec.field_name}.label'
+                             if schema_spec.field_name in ["clonal_cell_line",
+                                                           "differentiated_cell_line",
+                                                           "library_preparation"] # MorPhiC-specific use case
+                             else f'{schema_spec.field_name}.biomaterial_core.biomaterial_id')
         elif schema_spec.domain_entity == "file":
             return TabColumn(name=f'{display_name} - ID',
                              description="A file ID",
@@ -293,7 +300,8 @@ class SpreadsheetGenerator:
             return TabColumn(name=f'{display_name} - ID',
                              description="A protocol ID",
                              example="ABC12345",
-                             path=f'{schema_spec.field_name}.protocol_core.protocol_id')
+                             path=f'{schema_spec.field_name}.label' if schema_spec.field_name == "expression_alteration"
+                             else f'{schema_spec.field_name}.protocol_core.protocol_id')
         elif schema_spec.domain_entity == "process":
             return TabColumn(name=f'{display_name} - ID',
                              description="A process ID",
