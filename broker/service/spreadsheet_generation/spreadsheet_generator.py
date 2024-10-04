@@ -213,6 +213,7 @@ class SpreadsheetGenerator:
                 columns.extend(self.columns_for_ontology_module(field, context))
             elif self.field_is_object(field):
                 if field.field_name == "genes" and experiment_type == "pooled":
+                    add_pooled_subtab = True
                     field.multivalue = True # MorPhiC-specific scenario for pooled experiments
                 if field.multivalue:
                     if field.field_name in ['reagents', 'familial_relationships', 'pcr']:
@@ -223,6 +224,17 @@ class SpreadsheetGenerator:
                         subtab = self._generate_tab(subtab_name, field, IncludeAllModules(),
                                                     context=context + [field.field_name],
                                                     experiment_type=experiment_type)
+
+                        # MorPhiC: Explicitly include the expression_alteration.label in the genes sub-tab
+                        if add_pooled_subtab:
+                            label_column = TabColumn(
+                                name="Expression Alteration - ID",
+                                description="A protocol ID for expression alteration",
+                                example="ABC12345",
+                                path="expression_alteration.label"
+                            )
+                            subtab.columns.append(label_column)
+
                         subtabs.append(subtab)
                 else:
                     columns.extend(self.columns_for_field(field, context=context + [field.field_name]))
@@ -288,7 +300,8 @@ class SpreadsheetGenerator:
                              example="ABC12345",
                              path=f'{schema_spec.field_name}.label'
                              if schema_spec.field_name in ["clonal_cell_line",
-                                                           "differentiated_cell_line",
+                                                           "differentiated_product",
+                                                           "undifferentiated_product",
                                                            "library_preparation"] # MorPhiC-specific use case
                              else f'{schema_spec.field_name}.biomaterial_core.biomaterial_id')
         elif schema_spec.domain_entity == "file":
