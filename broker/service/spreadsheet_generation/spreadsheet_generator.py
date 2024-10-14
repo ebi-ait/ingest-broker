@@ -212,6 +212,7 @@ class SpreadsheetGenerator:
             if self.field_is_ontology(field):
                 columns.extend(self.columns_for_ontology_module(field, context))
             elif self.field_is_object(field):
+                add_pooled_subtab = False
                 if field.field_name == "genes" and experiment_type == "pooled":
                     add_pooled_subtab = True
                     field.multivalue = True # MorPhiC-specific scenario for pooled experiments
