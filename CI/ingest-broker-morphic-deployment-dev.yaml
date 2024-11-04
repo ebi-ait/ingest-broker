@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingest-broker
+  namespace: morphic-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ingest-broker
+  template:
+    metadata:
+      labels:
+        app: ingest-broker
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: topology.kubernetes.io/zone
+                    operator: In
+                    values:
+                      - eu-west-2a
+      containers:
+        - name: ingest-broker-container
+          image: 489384528211.dkr.ecr.eu-west-2.amazonaws.com/ingest-broker:morphic
+          ports:
+            - containerPort: 5000
+          env:
+            - name: INGEST_API
+              value: "https://api.ingest.dev.archive.morphic.bio/"
+            - name: MONGO_URI
+              value: "mongodb+srv://morphic-dev:mDev12345@morphicdevcluster.jduoa8p.mongodb.net/MorphicDev?retryWrites=true&w=majority"
+            - name: RABBIT_HOST
+              value: rabbitmq-service
+            - name: RABBIT_PORT
+              value: "5672"
+            - name: AWS_COGNITO_DOMAIN
+              value: "https://morphic-dev.auth.eu-west-2.amazoncognito.com/oauth2"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_REGION
+              value: eu-west-2
+            - name: SPREADSHEET_STORAGE_DIR
+              value: "/data/spreadsheets"
+          volumeMounts:
+            - name: spreadsheet-storage
+              mountPath: /data/spreadsheets
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          imagePullPolicy: Always
+      volumes:
+        - name: spreadsheet-storage
+          persistentVolumeClaim:
+            claimName: manual-ebs-pvc

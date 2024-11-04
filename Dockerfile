@@ -10,6 +10,10 @@ RUN pip install pip-tools
 COPY requirements.txt /app/requirements.txt
 RUN pip-sync /app/requirements.txt
 
+# Copy the local version of ingest-client and install it
+COPY ingest-client/ /app/ingest-client
+RUN pip install /app/ingest-client
+
 COPY broker /app/broker
 COPY broker_app.py /app/broker_app.py
 COPY logging-config.json /app/logging-config.json

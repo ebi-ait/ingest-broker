@@ -1,0 +1,76 @@
+stages:
+  - build
+  - test
+  - package
+  - deploy
+
+variables:
+  APP_NAME: ingest-broker
+  IMAGE_NAME: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$APP_NAME:$CI_COMMIT_SHORT_SHA
+  AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+  AWS_ECR_REGISTRY: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+  EKS_CLUSTER_NAME: $EKS_CLUSTER_NAME
+
+# Build stage for compiling and preparing the broker image
+build:
+  stage: build
+  image: docker:19.03.12
+  services:
+    - docker:19.03.12-dind
+  before_script:
+    - apk add --no-cache python3 py3-pip
+    - pip3 install awscli
+    - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ECR_REGISTRY
+  script:
+    - docker build -t $IMAGE_NAME .
+    - docker push $IMAGE_NAME
+
+# Test stage for running broker tests
+test:
+  stage: test
+  image: quay.io/ebi-ait/ingest-base-images:python_3.10-slim
+  before_script:
+    - pip install --upgrade pip
+    - pip install pip-tools
+    - pip-sync requirements.txt requirements-dev.txt
+  script:
+    - pytest --junitxml=results.xml
+  artifacts:
+    reports:
+      junit: results.xml
+  allow_failure: true
+
+# Package stage for tagging the Docker image in ECR
+package:
+  stage: package
+  image: docker:19.03.12
+  services:
+    - docker:19.03.12-dind
+  before_script:
+    - apk add --no-cache python3 py3-pip
+    - pip3 install awscli
+    - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ECR_REGISTRY
+  script:
+    - docker pull $IMAGE_NAME
+    - TAG_NAME=$AWS_ECR_REGISTRY/$APP_NAME:$ENVIRONMENT_NAME-$CI_COMMIT_SHORT_SHA
+    - docker tag $IMAGE_NAME $TAG_NAME
+    - docker push $TAG_NAME
+    - echo "RELEASE_TAG=$TAG_NAME" >> release_tag.env
+  artifacts:
+    reports:
+      dotenv: release_tag.env
+
+# Deploy stage for deploying the tagged image to EKS
+deploy:
+  stage: deploy
+  image: alpine/k8s:1.27.13
+  before_script:
+    - apk add --no-cache curl jq python3 py3-pip
+    - pip install awscli
+    - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_DEFAULT_REGION
+  script:
+    - kubectl apply -f CI/ingest-broker-morphic-deployment.yaml
+    - kubectl apply -f CI/ingest-broker-morphic-service.yaml -n morphic-dev
+  environment:
+    name: $ENVIRONMENT_NAME
+    url: $DEPLOY_URL
