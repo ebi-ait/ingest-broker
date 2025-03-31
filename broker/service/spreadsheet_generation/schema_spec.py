@@ -1,8 +1,11 @@
 from dataclasses import dataclass
-
 from typing import List, Optional, ClassVar, Union, Dict
 
-## TODO: At some point, move these definitions to ingest-client's SchemaTemplate libs so that we don't have to parse it all here
+class SchemaParsingException(Exception):
+    pass
+
+## TODO: At some point, move these definitions to ingest-client's SchemaTemplate
+# libs so that we don't have to parse it all here
 
 @dataclass
 class _FieldSpec:
@@ -86,7 +89,7 @@ class ParseUtils:
     @staticmethod
     def parse_number_field(field_name: str, data: Dict) -> NumberSpec:
         return NumberSpec(field_name, data["multivalue"], data["description"], data["required"], data["identifiable"],
-                          data["external_reference"], data["user_friendly"], data["example"])
+                          data["external_reference"], data["user_friendly"], data.get("example", None))
 
     @staticmethod
     def parse_integer_field(field_name: str, data: Dict) -> IntegerSpec:
@@ -126,21 +129,23 @@ class ParseUtils:
     @staticmethod
     def parse_field(field_name: str, data_dict: Dict) -> FieldSpec:
         value_type = data_dict["value_type"]
-        if value_type == "string":
-            return ParseUtils.parse_string_field(field_name, data_dict)
-        elif value_type == "number":
-            return ParseUtils.parse_number_field(field_name, data_dict)
-        elif value_type == "integer":
-            return ParseUtils.parse_integer_field(field_name, data_dict)
-        elif value_type == "boolean":
-            return ParseUtils.parse_boolean_field(field_name, data_dict)
-        elif value_type == "object":
-            if data_dict["schema"]["domain_entity"] == "ontology":
-                return ParseUtils.parse_ontology_field(field_name, data_dict)
-            else:
-                return ParseUtils.parse_object_field(field_name, data_dict)
-        else:
-            raise Exception(f'Unknown value type "{value_type}", required string, number, or object')
+        try:
+            if value_type == "string":
+                return ParseUtils.parse_string_field(field_name, data_dict)
+            elif value_type == "number":
+                return ParseUtils.parse_number_field(field_name, data_dict)
+            elif value_type == "integer":
+                return ParseUtils.parse_integer_field(field_name, data_dict)
+            elif value_type == "boolean":
+                return ParseUtils.parse_boolean_field(field_name, data_dict)
+            elif value_type == "object":
+                if data_dict["schema"]["domain_entity"] == "ontology":
+                    return ParseUtils.parse_ontology_field(field_name, data_dict)
+                else:
+                    return ParseUtils.parse_object_field(field_name, data_dict)
+        except Exception as e:
+            raise SchemaParsingException(f'problem parsing field {field_name} of type {value_type}: {type(e)}: {str(e)}') from e
+        raise SchemaParsingException(f'Unknown value type "{value_type}" when parsing field {field_name}, required string, boolean, number, integer or object')
 
     @staticmethod
     def parse_schema_spec(schema_name: str, data: Dict) -> SchemaSpec:

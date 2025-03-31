@@ -186,7 +186,11 @@ class SpreadsheetGenerator:
     def tab_for_type(self, type_spec: TypeSpec) -> ParsedTab:
         schema_name = type_spec.schema_name
         schema_properties = self.metadata_properties_for_type(schema_name)
-        schema_spec = ParseUtils.parse_schema_spec(schema_name, schema_properties)
+        try:
+            schema_spec = ParseUtils.parse_schema_spec(schema_name, schema_properties)
+        except Exception as e:
+            schema_url = self.metadata_properties_for_type(schema_name)["schema"]["url"]
+            raise RuntimeError(f'problem parsing schema {schema_name}: {str(e)}. Schema url: {schema_url}') from e
 
         parsed_tab = self._generate_tab(self.tab_name_for_type(schema_spec), schema_spec,
                                         include_modules=type_spec.include_modules,

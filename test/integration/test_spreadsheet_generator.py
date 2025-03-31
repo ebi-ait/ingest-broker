@@ -18,12 +18,13 @@ class TestSpreadsheetGenerator(TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.test_file = f"{self.temp_dir.name}/ss2.xlsx"
+        self.ingest_api = IngestApi('https://api.ingest.dev.archive.data.humancellatlas.org')
 
     def test_link_column_generation(self):
         cell_suspension_spec = TypeSpec("cell_suspension", IncludeAllModules(), False, LinkSpec(["donor_organism"], []))
 
-        ingest_api = IngestApi()
-        parsed_tab = SpreadsheetGenerator(ingest_api).tab_for_type(cell_suspension_spec)
+
+        parsed_tab = SpreadsheetGenerator(self.ingest_api).tab_for_type(cell_suspension_spec)
 
         self.assertTrue("donor_organism.biomaterial_core.biomaterial_id" in [col.path for col in parsed_tab.columns])
 
@@ -80,11 +81,9 @@ class TestSpreadsheetGenerator(TestCase):
 
         types = [test_type_spec_1, test_type_spec_2, test_type_spec_3, test_type_spec_4, test_type_spec_5]
 
-        ingest_api = IngestApi()
-
         parsed_tabs = []
         for type_spec in types:
-            tab_for_type = SpreadsheetGenerator(ingest_api).tab_for_type(type_spec)
+            tab_for_type = SpreadsheetGenerator(self.ingest_api).tab_for_type(type_spec)
             parsed_tabs.append(tab_for_type)
 
         all_tabs = SpreadsheetGenerator.flatten([[tab] + tab.sub_tabs for tab in parsed_tabs])
@@ -100,8 +99,8 @@ class TestSpreadsheetGenerator(TestCase):
                             [tab.columns for tab in template_tabs]))
 
     def test_user_friendly_names(self):
-        ingest_api = IngestApi()
-        spreadsheet_generator = SpreadsheetGenerator(ingest_api)
+
+        spreadsheet_generator = SpreadsheetGenerator(self.ingest_api)
 
         test_spreadsheet_spec = SpreadsheetSpec(
             [TypeSpec("project", IncludeAllModules(), False, None),
@@ -163,8 +162,8 @@ class TestSpreadsheetGenerator(TestCase):
         self.assertFalse(name_error)
 
     def test_generate(self):
-        ingest_api = IngestApi()
-        spreadsheet_generator = SpreadsheetGenerator(ingest_api)
+
+        spreadsheet_generator = SpreadsheetGenerator(self.ingest_api)
 
         test_spreadsheet_spec = SpreadsheetSpec(
             [TypeSpec("project", IncludeAllModules(), False, None),
