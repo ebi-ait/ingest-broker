@@ -78,7 +78,7 @@ class SpreadsheetUploadService:
 
     def upload(self, submission_url, path, project_uuid=None, update_project=False):
         submission: Submission
-        submission = self.ingest_api.get(submission_url)
+        submission = self.ingest_api.get(submission_url).json()
         submission_uuid = submission["uuid"]["uuid"]
         _LOGGER.info(f'Spreadsheet started! for {submission_url}')
         submission, template_manager = self.importer.import_file(path,
@@ -89,7 +89,7 @@ class SpreadsheetUploadService:
         _LOGGER.info(f'Spreadsheet upload done for submission_uuid {submission_uuid}!')
 
     def upload_updates(self, submission_url, path):
-        submission = self.ingest_api.get(submission_url)
+        submission = self.ingest_api.get(submission_url).json()
         submission_uuid = submission["uuid"]["uuid"]
         _LOGGER.info(f'Spreadsheet started for {submission_uuid}!')
         self.importer.import_file(path, submission_url, is_update=True)
