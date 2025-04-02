@@ -9,8 +9,16 @@ from broker.service.spreadsheet_upload_service import SpreadsheetUploadService
 class SpreadsheetUploadServiceTest(TestCase):
 
     def setUp(self) -> None:
+
+
+        # Create a mock response
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"uuid":{"uuid":"test_uuid"}}
+        mock_response.status_code = 200
+
+        # Create an instance of IngestApi and manually set get to return the mock response
         self.ingest_api = Mock('ingest_api', spec_set=IngestApi)
-        self.ingest_api.get = Mock(return_value={"uuid":{"uuid":"test_uuid"}})
+        self.ingest_api.get = MagicMock(return_value=mock_response)
 
         self.storage_service = Mock('storage_service')
         self.storage_service.store = Mock(return_value='path')
