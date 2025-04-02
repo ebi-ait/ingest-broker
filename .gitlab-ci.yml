@@ -9,7 +9,7 @@ include:
   image: quay.io/ebi-ait/ingest-base-images:python_3.10-slim
   before_script:
     - pip install --upgrade pip
-    - pip install pip-tools
+    - pip install --upgrade pip-tools
     - pip-sync requirements.txt requirements-dev.txt
   script:
     - pytest --junitxml=results.xml

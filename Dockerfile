@@ -5,7 +5,7 @@ RUN mkdir /app
 WORKDIR /app/
 
 RUN pip install --upgrade pip
-RUN pip install pip-tools
+RUN pip install --upgrade pip-tools
 
 COPY requirements.txt /app/requirements.txt
 RUN pip-sync /app/requirements.txt

@@ -16,8 +16,8 @@ The `requirements-dev.txt` file contains dependencies specific for development
 
 The requirement files (`requirements.txt`, `requirements-dev.txt`) are generated using `pip-compile` from [pip-tools](https://github.com/jazzband/pip-tools) 
 ```bash
-pip-compile requirements.in
 pip-compile requirements-dev.in
+pip-compile requirements.in
 ```
 The direct dependencies are listed in `requirements.in`, `requirements-dev.in` input files.
 

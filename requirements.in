@@ -3,7 +3,7 @@ expiringdict
 flask
 flask-cors
 geo-to-hca
-hca-ingest
+hca-ingest~=2.8.1
 jsonpath-rw
 jsonpickle
 jsonref

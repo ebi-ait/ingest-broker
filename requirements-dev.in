@@ -7,3 +7,4 @@ pylint
 pytest
 python-dotenv
 xlrd
+pip-tools

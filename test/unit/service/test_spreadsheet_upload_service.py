@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from hca_ingest.api.ingestapi import IngestApi
 from mock import Mock, MagicMock, patch
 
 from broker.service.spreadsheet_upload_service import SpreadsheetUploadService
@@ -8,14 +9,15 @@ from broker.service.spreadsheet_upload_service import SpreadsheetUploadService
 class SpreadsheetUploadServiceTest(TestCase):
 
     def setUp(self) -> None:
-        self.ingest_api = Mock('ingest_api')
+        self.ingest_api = Mock('ingest_api', spec_set=IngestApi)
+        self.ingest_api.get = Mock(return_value={"uuid":{"uuid":"test_uuid"}})
 
         self.storage_service = Mock('storage_service')
         self.storage_service.store = Mock(return_value='path')
 
-        self.mock_submission = Mock('submission')
         self.mock_template_mgr = Mock('template_mgr')
         self.importer = MagicMock('importer')
+        self.mock_submission = Mock('submission', return_value={"uuid":{"uuid":"test_uuid"}})
         self.importer.import_file = Mock(return_value=(self.mock_submission, self.mock_template_mgr))
         self.importer.update_spreadsheet_with_uuids = Mock()
         self.spreadsheet_upload_service = spreadsheet_upload_service = SpreadsheetUploadService(self.ingest_api, self.storage_service, self.importer)
